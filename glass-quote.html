@@ -1,681 +1,426 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ユーエス硝子 ガラス積算ツール</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ユーエス硝子 ガラス積算ツール</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#eef1f5;color:#222;font-size:14px}
+.app{max-width:1400px;margin:0 auto;padding:16px}
 
-    body {
-      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif;
-      background: #eef1f5;
-      color: #1a1a2e;
-      font-size: 14px;
-      min-height: 100vh;
-    }
+/* ── Header ── */
+.hdr{background:linear-gradient(135deg,#0d2b50,#1a5f8c);color:#fff;padding:18px 24px;border-radius:14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.hdr h1{font-size:20px;font-weight:800}
+.hdr p{font-size:12px;opacity:.75;margin-top:4px}
 
-    .app { max-width: 1400px; margin: 0 auto; padding: 16px; }
+/* ── Top bar ── */
+.topbar{display:flex;gap:10px;align-items:center;background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-wrap:wrap}
+.tblabel{font-weight:700;font-size:13px;white-space:nowrap}
+#pname{flex:1;min-width:180px;padding:8px 12px;border:1.5px solid #ccc;border-radius:7px;font-family:inherit;font-size:14px}
+#pname:focus{outline:none;border-color:#1a5f8c}
+.toggle-wrap{display:flex;border:2px solid #1a5f8c;border-radius:8px;overflow:hidden}
+.tbtn{padding:8px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;background:#fff;color:#1a5f8c}
+.tbtn:first-child{border-right:1px solid #1a5f8c}
+.tbtn.on{background:#1a5f8c;color:#fff}
 
-    /* ── Header ── */
-    .header {
-      background: linear-gradient(135deg, #0d2b50 0%, #1a5f8c 100%);
-      color: white;
-      padding: 18px 24px;
-      border-radius: 14px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.2);
-    }
-    .header h1 { font-size: 20px; font-weight: 800; letter-spacing: .03em; }
-    .header .sub { font-size: 12px; opacity: .75; margin-top: 3px; }
+/* ── Row cards ── */
+.row-cards{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+.row-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:5px solid #1a5f8c}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.card-ttl{font-weight:800;font-size:15px;color:#0d2b50}
+.btn-del{background:#e53935;color:#fff;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fglabel{font-size:11px;font-weight:700;color:#555;letter-spacing:.04em}
+.fg input[type=number],.fg select{padding:8px 10px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;width:100%}
+.fg input[type=number]:focus,.fg select:focus{outline:none;border-color:#1a5f8c}
+.rrow{display:flex;gap:10px;flex-wrap:wrap;padding-top:3px}
+.rrow label{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:#333}
+.rrow input[type=radio]{width:15px;height:15px;accent-color:#1a5f8c}
 
-    /* ── Top bar ── */
-    .topbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      background: white;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-      flex-wrap: wrap;
-    }
-    .topbar label { font-weight: 700; font-size: 13px; white-space: nowrap; }
-    .topbar .project-input {
-      flex: 1;
-      min-width: 180px;
-      padding: 7px 12px;
-      border: 1.5px solid #ccc;
-      border-radius: 7px;
-      font-family: inherit;
-      font-size: 14px;
-    }
-    .topbar .project-input:focus { outline: none; border-color: #1a5f8c; }
+/* ── Add button ── */
+.btn-add{display:block;width:100%;padding:12px;background:#e8f0f9;border:2px dashed #1a5f8c;border-radius:10px;color:#1a5f8c;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center;margin-bottom:20px}
+.btn-add:hover{background:#d0e5f7}
 
-    /* ── Toggle buttons ── */
-    .toggle-wrap {
-      display: flex;
-      gap: 0;
-      border: 2px solid #1a5f8c;
-      border-radius: 8px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .toggle-btn {
-      padding: 8px 18px;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: inherit;
-      background: white;
-      color: #1a5f8c;
-      transition: background .15s, color .15s;
-    }
-    .toggle-btn.active { background: #1a5f8c; color: white; }
-    .toggle-btn:first-child { border-right: 1px solid #1a5f8c; }
+/* ── Table section ── */
+.tbl-section{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:20px;margin-bottom:14px;overflow-x:auto}
+.tbl-title{font-size:15px;font-weight:800;color:#0d2b50;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px}
+thead th{background:#0d2b50;color:#fff;padding:9px 7px;text-align:center;white-space:nowrap;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+tbody td{padding:8px 7px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}
+tbody td.c{text-align:center}
+tbody td.l{text-align:left}
+tbody tr:nth-child(even){background:#f7f9fc}
+tfoot td{padding:9px 7px;text-align:right;font-weight:700;white-space:nowrap}
+tfoot td.l{text-align:left}
+.tr-sub td{background:#ecf3fb;border-top:2px solid #1a5f8c}
+.tr-misc td{background:#fff8e1}
+.tr-grand td{background:#0d2b50;color:#fff;font-size:13.5px;border-top:2px solid #1a5f8c;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
-    /* ── Row cards ── */
-    .row-cards { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+/* ── Banners ── */
+.total-banner{background:linear-gradient(135deg,#0d2b50,#1a5f8c);color:#fff;border-radius:12px;padding:18px 24px;text-align:center;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.total-banner .lbl{font-size:13px;opacity:.85;margin-bottom:6px}
+.total-banner .amt{font-size:38px;font-weight:900}
+.profit-banner{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;border-radius:12px;padding:14px 24px;text-align:center;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.profit-banner .lbl{font-size:12px;opacity:.85;margin-bottom:4px}
+.profit-banner .amt{font-size:28px;font-weight:900}
 
-    .row-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.07);
-      border-left: 5px solid #1a5f8c;
-    }
+/* ── PDF button ── */
+.action-bar{margin-bottom:24px}
+.btn-pdf{background:#c62828;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer}
+.btn-pdf:hover{background:#b71c1c}
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .card-title { font-weight: 800; font-size: 15px; color: #0d2b50; }
-
-    .btn-del {
-      background: #e53935;
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
-      font-family: inherit;
-      transition: background .15s;
-    }
-    .btn-del:hover { background: #b71c1c; }
-
-    .fields {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-    }
-
-    .fg { display: flex; flex-direction: column; gap: 5px; }
-    .fg > label { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: .04em; }
-
-    .fg input, .fg select {
-      padding: 8px 10px;
-      border: 1.5px solid #ddd;
-      border-radius: 7px;
-      font-size: 14px;
-      font-family: inherit;
-      width: 100%;
-      transition: border-color .15s;
-    }
-    .fg input:focus, .fg select:focus { outline: none; border-color: #1a5f8c; }
-
-    .radio-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .radio-row label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      color: #333;
-    }
-    .radio-row input[type=radio] { accent-color: #1a5f8c; width: 15px; height: 15px; }
-
-    /* ── Add button ── */
-    .btn-add {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      background: #e8f0f9;
-      border: 2px dashed #1a5f8c;
-      border-radius: 10px;
-      color: #1a5f8c;
-      font-size: 15px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      text-align: center;
-      margin-bottom: 20px;
-      transition: background .15s;
-    }
-    .btn-add:hover { background: #c8ddf0; }
-
-    /* ── Table section ── */
-    .table-section {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.07);
-      padding: 20px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-    }
-    .table-title {
-      font-size: 15px;
-      font-weight: 800;
-      color: #0d2b50;
-      margin-bottom: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12.5px;
-      min-width: 820px;
-    }
-
-    thead th {
-      background: #0d2b50;
-      color: white;
-      padding: 9px 7px;
-      text-align: center;
-      white-space: nowrap;
-      font-size: 11.5px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    tbody td {
-      padding: 8px 7px;
-      border-bottom: 1px solid #eee;
-      text-align: right;
-      white-space: nowrap;
-    }
-    tbody td.c { text-align: center; }
-    tbody td.l { text-align: left; }
-    tbody tr:nth-child(even) { background: #f7f9fc; }
-    tbody tr:hover { background: #edf3fb; }
-
-    tfoot td {
-      padding: 9px 7px;
-      white-space: nowrap;
-      text-align: right;
-      font-weight: 700;
-    }
-    tfoot td.l { text-align: left; }
-
-    tr.tr-sub td { background: #ecf3fb; border-top: 2px solid #1a5f8c; }
-    tr.tr-misc td { background: #fff8e1; }
-    tr.tr-grand td {
-      background: #0d2b50;
-      color: white;
-      font-size: 13.5px;
-      border-top: 2px solid #1a5f8c;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    /* ── Summary cards ── */
-    .summary-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .sum-card {
-      background: white;
-      border-radius: 10px;
-      padding: 14px 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.07);
-      text-align: center;
-    }
-    .sum-card .sc-label { font-size: 11px; color: #666; font-weight: 700; margin-bottom: 5px; }
-    .sum-card .sc-val { font-size: 18px; font-weight: 800; color: #0d2b50; }
-
-    .total-banner {
-      background: linear-gradient(135deg, #0d2b50, #1a5f8c);
-      color: white;
-      border-radius: 12px;
-      padding: 18px 24px;
-      text-align: center;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.2);
-    }
-    .total-banner .tb-label { font-size: 13px; opacity: .85; margin-bottom: 6px; }
-    .total-banner .tb-amt { font-size: 38px; font-weight: 900; letter-spacing: .02em; }
-
-    .profit-banner {
-      background: linear-gradient(135deg, #1b5e20, #2e7d32);
-      color: white;
-      border-radius: 12px;
-      padding: 14px 24px;
-      text-align: center;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.18);
-    }
-    .profit-banner .pb-label { font-size: 12px; opacity: .85; margin-bottom: 4px; }
-    .profit-banner .pb-amt { font-size: 28px; font-weight: 900; }
-
-    /* ── Action bar ── */
-    .action-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-    .btn-pdf {
-      background: #c62828;
-      color: white;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 800;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .btn-pdf:hover { background: #b71c1c; }
-
-    /* ── Print ── */
-    @media print {
-      @page {
-        size: A4 landscape;
-        margin: 10mm 10mm 6mm 10mm;
-      }
-      body {
-        background: white;
-        font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', sans-serif;
-      }
-      .no-print { display: none !important; }
-      .app { padding: 0; max-width: 100%; }
-      .table-section {
-        box-shadow: none;
-        padding: 0;
-        border-radius: 0;
-        overflow: visible;
-      }
-      .table-title { margin-bottom: 8px; }
-      table { min-width: auto; font-size: 11px; }
-      thead th { padding: 7px 5px; font-size: 10.5px; }
-      tbody td, tfoot td { padding: 6px 5px; }
-      tr.tr-grand td { font-size: 12px; }
-    }
-  </style>
+/* ── Print ── */
+@media print{
+  @page{size:A4 landscape;margin:10mm 10mm 6mm 10mm}
+  body{background:#fff;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo',sans-serif}
+  .no-print{display:none!important}
+  .app{padding:0;max-width:100%}
+  .tbl-section{box-shadow:none;padding:0;border-radius:0;overflow:visible}
+  table{min-width:auto;font-size:11px}
+  thead th{padding:7px 5px;font-size:10.5px}
+  tbody td,tfoot td{padding:6px 5px}
+  .tr-grand td{font-size:12px}
+}
+</style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useCallback } = React;
+<div class="app">
 
-/* ═══════════════════════════════════════
-   単価マスター
-═══════════════════════════════════════ */
-const GLASS_PRICES = {
-  'FL2':  1560, 'FL3':  1840, 'FL5':  1710, 'FL6':  2130,
-  'FL8':  3500, 'FL10': 4800,
-  'F6':   4560, 'Fw':   5100, 'pw':   8100,
-  'Yカガミ3': 3530, 'Yカガミ5': 4940, 'Yカガミ6': 6000,
-  '3+3透明':  7100, '4+4透明':  8900, '5+5透明': 10600,
-  '3+3乳半': 10600, '4+4乳半': 12300,
-  'ラミブロック3+3透明': 7800, 'ラミブロック4+4透明': 11300,
-  'ラミブロック3+3乳半': 10400, 'ラミブロック4+4乳半': 13000,
-  '耐熱5': 45000, '耐熱8': 93000,
+  <div class="hdr no-print">
+    <h1>ユーエス硝子　ガラス積算ツール</h1>
+    <p>ガラス修理・交換用</p>
+  </div>
+
+  <div class="topbar no-print">
+    <span class="tblabel">案件名</span>
+    <input type="text" id="pname" placeholder="案件名・現場名（任意）" oninput="calc()">
+    <span class="tblabel">表示モード</span>
+    <div class="toggle-wrap">
+      <button id="btn-int" class="tbtn on" onclick="setView('internal')">社内用</button>
+      <button id="btn-cus" class="tbtn"     onclick="setView('customer')">元請け提出用</button>
+    </div>
+  </div>
+
+  <div id="row-cards" class="row-cards no-print"></div>
+  <button class="btn-add no-print" onclick="addRow()">＋ 明細を追加</button>
+
+  <div class="tbl-section">
+    <div id="tbl-title" class="tbl-title no-print">【社内用】 積算明細</div>
+    <div id="tbl-body"></div>
+  </div>
+
+  <div class="total-banner no-print">
+    <div class="lbl" id="total-lbl">合計金額</div>
+    <div class="amt" id="total-amt">¥ 0</div>
+  </div>
+
+  <div id="profit-sec" class="profit-banner no-print">
+    <div class="lbl">粗利</div>
+    <div class="amt" id="profit-amt">¥ 0</div>
+  </div>
+
+  <div class="action-bar no-print">
+    <button class="btn-pdf" onclick="window.print()">PDF出力（A4 横）</button>
+  </div>
+
+</div>
+<script>
+'use strict';
+
+/* ══ 単価マスター ══ */
+var GP = {
+  'FL2':1560,'FL3':1840,'FL5':1710,'FL6':2130,'FL8':3500,'FL10':4800,
+  'F6':4560,'Fw':5100,'pw':8100,
+  'Yカガミ3':3530,'Yカガミ5':4940,'Yカガミ6':6000,
+  '3+3透明':7100,'4+4透明':8900,'5+5透明':10600,
+  '3+3乳半':10600,'4+4乳半':12300,
+  'ラミブロック3+3透明':7800,'ラミブロック4+4透明':11300,
+  'ラミブロック3+3乳半':10400,'ラミブロック4+4乳半':13000,
+  '耐熱5':45000,'耐熱8':93000
 };
-
-const CONSTRUCTION_RATES = {
-  'FL5': 1100, 'FL6': 1200, 'FL8': 1400, 'FL10': 2000, 'FL12': 3000,
-  'F6':  1200, 'Fw':  1300, 'pw':  1300,
+var CR = {
+  'FL5':1100,'FL6':1200,'FL8':1400,'FL10':2000,'FL12':3000,
+  'F6':1200,'Fw':1300,'pw':1300
 };
-const DEFAULT_RATE = 1200;
+var MIRRORS = {'Yカガミ3':1,'Yカガミ5':1,'Yカガミ6':1};
+var MULTS = {g:1.25,c:1.75,k:1.48,kr:1.48,d:1.00};
 
-const GLASS_TYPES   = Object.keys(GLASS_PRICES);
-const MIRROR_TYPES  = new Set(['Yカガミ3', 'Yカガミ5', 'Yカガミ6']);
+var viewMode = 'internal';
+var rid = 0;
 
-/* ─── helpers ─── */
-const isMirror = (t) => MIRROR_TYPES.has(t);
-const rate     = (t) => CONSTRUCTION_RATES[t] ?? DEFAULT_RATE;
-const fmt      = (n) => Math.round(n).toLocaleString('ja-JP');
-const fmtArea  = (n) => n.toFixed(3);
+function fmt(n){ return Math.round(n).toLocaleString('ja-JP'); }
+function fmtA(n){ return n.toFixed(3); }
+function getRate(t){ return CR[t] !== undefined ? CR[t] : 1200; }
 
-/* ─── row calculation ─── */
-function calcRow(row) {
-  const w  = parseFloat(row.width)  || 0;
-  const h  = parseFloat(row.height) || 0;
-  const q  = parseInt(row.qty)      || 0;
-  const up = GLASS_PRICES[row.glassType] || 0;
+/* ── ガラス種類 <option> 文字列 ── */
+var GOPTS = (function(){
+  var s = '';
+  var keys = Object.keys(GP);
+  for(var i=0;i<keys.length;i++){
+    s += '<option value="'+keys[i]+'"'+(keys[i]==='FL5'?' selected':'')+'>'+keys[i]+'</option>';
+  }
+  return s;
+})();
 
-  const area         = w * h / 1_000_000;
-  const materialCost = Math.round(up * area * q * 1.10);
-  const glassPrice   = Math.round(materialCost * 2.0);
+/* ── 行計算 ── */
+function calcRow(d){
+  var w  = parseFloat(d.w)  || 0;
+  var h  = parseFloat(d.h)  || 0;
+  var q  = parseInt(d.q)    || 0;
+  var up = GP[d.g]          || 0;
+  var area = w * h / 1000000;
+  var mat  = Math.round(up * area * q * 1.10);
+  var gp   = Math.round(mat * 2.0);
 
-  // 施工工賃 (修理案件のため常に ×2)
-  let constructionCost = 0;
-  if (isMirror(row.glassType)) {
-    constructionCost = 5000;
+  var cc = 0;
+  if(MIRRORS[d.g]){
+    cc = 5000;
   } else {
-    const r = rate(row.glassType);
-    let c = area * r * q * 2;           // 修理 ×2
-    if (row.withRemoval) c += area * r * q; // 取り外し込み
-    constructionCost = Math.round(c);
+    var r = getRate(d.g);
+    var base = area * r * q * 2;       /* 修理案件 常に×2 */
+    if(d.rem) base += area * r * q;    /* 取り外し込み */
+    cc = Math.round(base);
   }
 
-  // コーキング
-  let caulkingCost = 0, caulkingRemovalCost = 0;
-  if (row.fixMethod === 'caulking') {
-    const meters     = ((w + h) / 1000) * 4 * q;
-    const cRate      = row.withFireCaulking ? 700 : 300;
-    caulkingCost         = Math.round(meters * cRate);
-    caulkingRemovalCost  = Math.round(meters * 300);
+  var kc=0, kr=0;
+  if(d.fix === 'caulking'){
+    var m = ((w+h)/1000) * 4 * q;
+    kc = Math.round(m * (d.fire ? 700 : 300));
+    kr = Math.round(m * 300);
   }
 
-  const disposalCost = q * 1000;
-
-  return { area, materialCost, glassPrice, constructionCost, caulkingCost, caulkingRemovalCost, disposalCost };
+  return {area:area, mat:mat, gp:gp, cc:cc, kc:kc, kr:kr, dc:q*1000};
 }
 
-/* ─── customer multipliers ─── */
-const MULTS = { glassPrice: 1.25, constructionCost: 1.75, caulkingCost: 1.48, caulkingRemovalCost: 1.48, disposalCost: 1.00 };
-
-function toCustomer(c) {
+/* ── 行データ取得 ── */
+function getRowData(el){
+  function radio(pre){
+    var el2 = el.querySelector('input[name="'+pre+'"]:checked');
+    return el2 ? el2.value : '';
+  }
   return {
-    ...c,
-    glassPrice:          Math.round(c.glassPrice          * MULTS.glassPrice),
-    constructionCost:    Math.round(c.constructionCost    * MULTS.constructionCost),
-    caulkingCost:        Math.round(c.caulkingCost        * MULTS.caulkingCost),
-    caulkingRemovalCost: Math.round(c.caulkingRemovalCost * MULTS.caulkingRemovalCost),
-    disposalCost:        Math.round(c.disposalCost        * MULTS.disposalCost),
+    w:   el.querySelector('.iw').value,
+    h:   el.querySelector('.ih').value,
+    q:   el.querySelector('.iq').value,
+    g:   el.querySelector('.ig').value,
+    fix: radio('fix'+el.dataset.rid),
+    rem: radio('rem'+el.dataset.rid) === '1',
+    fire:radio('fir'+el.dataset.rid) === '1'
   };
 }
 
-/* ─── row id counter ─── */
-let _id = 1;
-const newRow = () => ({
-  id: _id++,
-  width: '', height: '', qty: '1',
-  glassType: 'FL5',
-  fixMethod: 'caulking',
-  withRemoval: false,
-  withFireCaulking: false,
-});
+/* ── メイン計算＋テーブル描画 ── */
+function calc(){
+  var cards = document.querySelectorAll('.row-card');
+  var datas=[], calcs=[];
+  for(var i=0;i<cards.length;i++){
+    var d = getRowData(cards[i]);
+    datas.push(d);
+    calcs.push(calcRow(d));
+  }
 
-/* ═══════════════════════════════════════
-   RowCard コンポーネント
-═══════════════════════════════════════ */
-function RowCard({ row, index, onChange, onDelete, canDelete }) {
-  const upd = (field, val) => onChange(row.id, { ...row, [field]: val });
+  var tq=0;
+  for(var i=0;i<datas.length;i++) tq += parseInt(datas[i].q)||0;
+  var misc = tq>=4 ? 15000 : (tq>=1 ? 7500 : 0);
 
-  return (
-    <div className="row-card">
-      <div className="card-header">
-        <span className="card-title">明細 {index + 1}</span>
-        {canDelete && <button className="btn-del" onClick={() => onDelete(row.id)}>削除</button>}
-      </div>
-      <div className="fields">
-        <div className="fg">
-          <label>幅 (mm)</label>
-          <input type="number" value={row.width} min="0"
-            placeholder="例: 600"
-            onChange={e => upd('width', e.target.value)} />
-        </div>
-        <div className="fg">
-          <label>高さ (mm)</label>
-          <input type="number" value={row.height} min="0"
-            placeholder="例: 900"
-            onChange={e => upd('height', e.target.value)} />
-        </div>
-        <div className="fg">
-          <label>枚数</label>
-          <input type="number" value={row.qty} min="1"
-            onChange={e => upd('qty', e.target.value)} />
-        </div>
-        <div className="fg">
-          <label>ガラス種類</label>
-          <select value={row.glassType} onChange={e => upd('glassType', e.target.value)}>
-            {GLASS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="fg" style={{minWidth: '200px'}}>
-          <label>留め方</label>
-          <div className="radio-row">
-            <label><input type="radio" checked={row.fixMethod==='caulking'} onChange={()=>upd('fixMethod','caulking')} /> コーキング留め</label>
-            <label><input type="radio" checked={row.fixMethod==='bead'}     onChange={()=>upd('fixMethod','bead')}     /> ビード留め</label>
-          </div>
-        </div>
-        <div className="fg">
-          <label>取り外し込み</label>
-          <div className="radio-row">
-            <label><input type="radio" checked={row.withRemoval}  onChange={()=>upd('withRemoval',true)}  /> あり</label>
-            <label><input type="radio" checked={!row.withRemoval} onChange={()=>upd('withRemoval',false)} /> なし</label>
-          </div>
-        </div>
-        <div className="fg">
-          <label>防火コーキング</label>
-          <div className="radio-row">
-            <label><input type="radio" checked={row.withFireCaulking}  onChange={()=>upd('withFireCaulking',true)}  /> あり</label>
-            <label><input type="radio" checked={!row.withFireCaulking} onChange={()=>upd('withFireCaulking',false)} /> なし</label>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  var isInt = viewMode === 'internal';
+
+  /* 表示用計算値（元請けは倍率適用） */
+  var disp=[];
+  for(var i=0;i<calcs.length;i++){
+    var c=calcs[i];
+    if(isInt){
+      disp.push(c);
+    } else {
+      disp.push({
+        area:c.area, mat:c.mat,
+        gp:  Math.round(c.gp  * MULTS.g),
+        cc:  Math.round(c.cc  * MULTS.c),
+        kc:  Math.round(c.kc  * MULTS.k),
+        kr:  Math.round(c.kr  * MULTS.kr),
+        dc:  Math.round(c.dc  * MULTS.d)
+      });
+    }
+  }
+
+  /* 合計 */
+  var tG=0,tC=0,tK=0,tKR=0,tD=0,tA=0,tM=0;
+  for(var i=0;i<disp.length;i++){
+    tG+=disp[i].gp; tC+=disp[i].cc; tK+=disp[i].kc;
+    tKR+=disp[i].kr; tD+=disp[i].dc;
+    tA+=calcs[i].area; tM+=calcs[i].mat;
+  }
+  var sub   = tG+tC+tK+tKR+tD;
+  var grand = sub+misc;
+
+  /* 粗利（社内値ベース） */
+  var intSub=0;
+  for(var i=0;i<calcs.length;i++)
+    intSub += calcs[i].gp+calcs[i].cc+calcs[i].kc+calcs[i].kr+calcs[i].dc;
+  var profit = intSub + misc - tM;
+
+  var fspan = isInt ? 11 : 10;
+
+  /* ── テーブルHTML組立 ── */
+  var h='<table><thead><tr>';
+  h+='<th>No.</th><th>寸法（幅×高）</th><th>ガラス種類</th><th>枚数</th><th>面積(m²)</th>';
+  if(isInt) h+='<th>材料原価</th>';
+  h+='<th>ガラス売価</th><th>施工工賃</th><th>コーキング費</th><th>コーキング<br>剥がし代</th><th>廃棄代</th><th>行合計</th>';
+  h+='</tr></thead><tbody>';
+
+  for(var i=0;i<datas.length;i++){
+    var d=datas[i], c=disp[i], ic=calcs[i];
+    var rt = c.gp+c.cc+c.kc+c.kr+c.dc;
+    var dim = (d.w&&d.h) ? d.w+' × '+d.h : '—';
+    h+='<tr>';
+    h+='<td class="c">'+(i+1)+'</td>';
+    h+='<td class="l">'+dim+'</td>';
+    h+='<td class="l">'+d.g+'</td>';
+    h+='<td class="c">'+(d.q||'—')+'</td>';
+    h+='<td>'+fmtA(ic.area)+'</td>';
+    if(isInt) h+='<td>'+fmt(ic.mat)+'</td>';
+    h+='<td>'+fmt(c.gp)+'</td>';
+    h+='<td>'+fmt(c.cc)+'</td>';
+    h+='<td>'+fmt(c.kc)+'</td>';
+    h+='<td>'+fmt(c.kr)+'</td>';
+    h+='<td>'+fmt(c.dc)+'</td>';
+    h+='<td><strong>'+fmt(rt)+'</strong></td>';
+    h+='</tr>';
+  }
+  h+='</tbody><tfoot>';
+
+  /* 小計 */
+  h+='<tr class="tr-sub"><td colspan="4" class="l">小計</td>';
+  h+='<td>'+fmtA(tA)+'</td>';
+  if(isInt) h+='<td>'+fmt(tM)+'</td>';
+  h+='<td>'+fmt(tG)+'</td><td>'+fmt(tC)+'</td><td>'+fmt(tK)+'</td><td>'+fmt(tKR)+'</td><td>'+fmt(tD)+'</td>';
+  h+='<td><strong>'+fmt(sub)+'</strong></td></tr>';
+
+  /* 諸経費 */
+  var miscLbl='諸経費（総枚数 '+tq+' 枚 ／ '+(tq>=4?'4枚以上':'1〜3枚')+'）';
+  h+='<tr class="tr-misc"><td colspan="'+fspan+'" class="l">'+miscLbl+'</td>';
+  h+='<td><strong>'+fmt(misc)+'</strong></td></tr>';
+
+  /* 合計 */
+  var gLbl = isInt ? '合計金額' : '<strong>見積金額合計</strong>';
+  h+='<tr class="tr-grand"><td colspan="'+fspan+'" class="l">'+gLbl+'</td>';
+  h+='<td><strong>'+fmt(grand)+'</strong></td></tr>';
+
+  h+='</tfoot></table>';
+  document.getElementById('tbl-body').innerHTML = h;
+
+  /* バナー更新 */
+  document.getElementById('total-lbl').textContent = isInt ? '合計金額' : '見積金額合計';
+  document.getElementById('total-amt').textContent = '¥ '+fmt(grand);
+
+  var ps = document.getElementById('profit-sec');
+  ps.style.display = isInt ? 'block' : 'none';
+  if(isInt) document.getElementById('profit-amt').textContent = '¥ '+fmt(profit);
+
+  /* タイトル */
+  var pn = document.getElementById('pname').value;
+  var ttl = isInt ? '【社内用】 積算明細' : '【元請け提出用】 見積明細';
+  if(pn) ttl += ' — '+pn;
+  document.getElementById('tbl-title').textContent = ttl;
 }
 
-/* ═══════════════════════════════════════
-   App
-═══════════════════════════════════════ */
-function App() {
-  const [rows,        setRows]    = useState([newRow()]);
-  const [viewMode,    setView]    = useState('internal');
-  const [projectName, setProject] = useState('');
-
-  const handleChange = useCallback((id, updated) => {
-    setRows(prev => prev.map(r => r.id === id ? updated : r));
-  }, []);
-  const handleAdd    = () => setRows(prev => [...prev, newRow()]);
-  const handleDelete = useCallback((id) => {
-    setRows(prev => prev.filter(r => r.id !== id));
-  }, []);
-
-  const isInternal = viewMode === 'internal';
-
-  /* ─── calculations ─── */
-  const totalQty   = rows.reduce((s, r) => s + (parseInt(r.qty) || 0), 0);
-  const miscExp    = totalQty >= 4 ? 15000 : (totalQty >= 1 ? 7500 : 0);
-
-  const internalCalcs = rows.map(calcRow);
-  const displayCalcs  = isInternal ? internalCalcs : internalCalcs.map(toCustomer);
-
-  const sum = (field) => displayCalcs.reduce((s, c) => s + c[field], 0);
-
-  const totGlass        = sum('glassPrice');
-  const totConst        = sum('constructionCost');
-  const totCaulk        = sum('caulkingCost');
-  const totCaulkRem     = sum('caulkingRemovalCost');
-  const totDisposal     = sum('disposalCost');
-  const totArea         = internalCalcs.reduce((s, c) => s + c.area, 0);
-  const totMaterial     = internalCalcs.reduce((s, c) => s + c.materialCost, 0);
-  const subtotal        = totGlass + totConst + totCaulk + totCaulkRem + totDisposal;
-  const grandTotal      = subtotal + miscExp;
-  const profit          = internalCalcs.reduce((s, c) => s + c.glassPrice + c.constructionCost + c.caulkingCost + c.caulkingRemovalCost + c.disposalCost, 0) + miscExp - totMaterial;
-
-  /* ─── column span helpers ─── */
-  // internal: 12 cols, customer: 11 cols
-  // first 4 = No./寸法/種類/枚数, then 面積, [材料原価 internal], glass, const, caulk, caulkRem, disposal, 合計
-  const footerSpan = isInternal ? 11 : 10;
-
-  return (
-    <div className="app">
-      {/* ── Header ── */}
-      <div className="header no-print">
-        <div>
-          <h1>ユーエス硝子　ガラス積算ツール</h1>
-          <p className="sub">ガラス修理・交換用</p>
-        </div>
-      </div>
-
-      {/* ── Top bar ── */}
-      <div className="topbar no-print">
-        <label>案件名</label>
-        <input className="project-input" type="text" value={projectName}
-          placeholder="案件名・現場名を入力（任意）"
-          onChange={e => setProject(e.target.value)} />
-        <label style={{marginLeft:'8px'}}>表示モード</label>
-        <div className="toggle-wrap">
-          <button className={`toggle-btn ${isInternal  ? 'active' : ''}`} onClick={() => setView('internal')}>社内用</button>
-          <button className={`toggle-btn ${!isInternal ? 'active' : ''}`} onClick={() => setView('customer')}>元請け提出用</button>
-        </div>
-      </div>
-
-      {/* ── Row cards ── */}
-      <div className="row-cards no-print">
-        {rows.map((row, i) => (
-          <RowCard
-            key={row.id} row={row} index={i}
-            onChange={handleChange} onDelete={handleDelete}
-            canDelete={rows.length > 1}
-          />
-        ))}
-      </div>
-      <button className="btn-add no-print" onClick={handleAdd}>＋ 明細を追加</button>
-
-      {/* ── Summary table ── */}
-      <div className="table-section">
-        <div className="table-title no-print">
-          {isInternal ? '【社内用】 積算明細' : '【元請け提出用】 見積明細'}
-          {projectName && <span style={{marginLeft:'12px', fontWeight:'normal', color:'#666'}}>— {projectName}</span>}
-        </div>
-        {/* print header */}
-        <div style={{display:'none'}} className="print-only">
-          <div style={{fontSize:'14px', fontWeight:'800', marginBottom:'6px'}}>
-            ユーエス硝子　{isInternal ? '社内用 積算明細' : '元請け提出用 見積明細'}
-            {projectName && `　／　${projectName}`}
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>寸法（幅×高）</th>
-              <th>ガラス種類</th>
-              <th>枚数</th>
-              <th>面積(m²)</th>
-              {isInternal && <th>材料原価</th>}
-              <th>ガラス売価</th>
-              <th>施工工賃</th>
-              <th>コーキング費</th>
-              <th>コーキング<br />剥がし代</th>
-              <th>廃棄代</th>
-              <th>行合計</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => {
-              const c   = displayCalcs[i];
-              const ic  = internalCalcs[i];
-              const rowTotal = c.glassPrice + c.constructionCost + c.caulkingCost + c.caulkingRemovalCost + c.disposalCost;
-              return (
-                <tr key={row.id}>
-                  <td className="c">{i + 1}</td>
-                  <td className="l">
-                    {row.width && row.height
-                      ? `${Number(row.width).toLocaleString()} × ${Number(row.height).toLocaleString()}`
-                      : '—'}
-                  </td>
-                  <td className="l">{row.glassType}</td>
-                  <td className="c">{row.qty || '—'}</td>
-                  <td>{fmtArea(ic.area)}</td>
-                  {isInternal && <td>{fmt(ic.materialCost)}</td>}
-                  <td>{fmt(c.glassPrice)}</td>
-                  <td>{fmt(c.constructionCost)}</td>
-                  <td>{fmt(c.caulkingCost)}</td>
-                  <td>{fmt(c.caulkingRemovalCost)}</td>
-                  <td>{fmt(c.disposalCost)}</td>
-                  <td><strong>{fmt(rowTotal)}</strong></td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            {/* 小計 */}
-            <tr className="tr-sub">
-              <td colSpan={4} className="l">小計</td>
-              <td>{fmtArea(totArea)}</td>
-              {isInternal && <td>{fmt(totMaterial)}</td>}
-              <td>{fmt(totGlass)}</td>
-              <td>{fmt(totConst)}</td>
-              <td>{fmt(totCaulk)}</td>
-              <td>{fmt(totCaulkRem)}</td>
-              <td>{fmt(totDisposal)}</td>
-              <td><strong>{fmt(subtotal)}</strong></td>
-            </tr>
-            {/* 諸経費 */}
-            <tr className="tr-misc">
-              <td colSpan={footerSpan} className="l">
-                諸経費（総枚数 {totalQty} 枚 ／ {totalQty >= 4 ? '4枚以上' : '1〜3枚'}）
-              </td>
-              <td><strong>{fmt(miscExp)}</strong></td>
-            </tr>
-            {/* 合計 */}
-            <tr className="tr-grand">
-              <td colSpan={footerSpan} className="l">
-                {isInternal ? '合計金額' : <strong>見積金額合計</strong>}
-              </td>
-              <td><strong>{fmt(grandTotal)}</strong></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* ── Summary banners (screen only) ── */}
-      {isInternal && (
-        <div className="summary-row no-print">
-          <div className="sum-card"><div className="sc-label">ガラス売価 計</div><div className="sc-val">¥{fmt(totGlass)}</div></div>
-          <div className="sum-card"><div className="sc-label">施工工賃 計</div><div className="sc-val">¥{fmt(totConst)}</div></div>
-          <div className="sum-card"><div className="sc-label">コーキング費 計</div><div className="sc-val">¥{fmt(totCaulk)}</div></div>
-          <div className="sum-card"><div className="sc-label">コーキング剥がし代 計</div><div className="sc-val">¥{fmt(totCaulkRem)}</div></div>
-          <div className="sum-card"><div className="sc-label">廃棄代 計</div><div className="sc-val">¥{fmt(totDisposal)}</div></div>
-          <div className="sum-card"><div className="sc-label">諸経費</div><div className="sc-val">¥{fmt(miscExp)}</div></div>
-          <div className="sum-card"><div className="sc-label">材料原価 計</div><div className="sc-val">¥{fmt(totMaterial)}</div></div>
-        </div>
-      )}
-
-      <div className="total-banner no-print">
-        <div className="tb-label">{isInternal ? '合計金額' : '見積金額合計'}</div>
-        <div className="tb-amt">¥ {fmt(grandTotal)}</div>
-      </div>
-
-      {isInternal && (
-        <div className="profit-banner no-print">
-          <div className="pb-label">粗利</div>
-          <div className="pb-amt">¥ {fmt(profit)}</div>
-        </div>
-      )}
-
-      {/* ── Actions ── */}
-      <div className="action-bar no-print">
-        <button className="btn-pdf" onClick={() => window.print()}>
-          PDF出力（A4 横）
-        </button>
-      </div>
-    </div>
-  );
+/* ── 表示モード切替 ── */
+function setView(mode){
+  viewMode = mode;
+  document.getElementById('btn-int').className = 'tbtn'+(mode==='internal'?' on':'');
+  document.getElementById('btn-cus').className = 'tbtn'+(mode==='customer'?' on':'');
+  calc();
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+/* ── 行番号更新＆削除ボタン表示制御 ── */
+function renumber(){
+  var cards = document.querySelectorAll('.row-card');
+  for(var i=0;i<cards.length;i++){
+    var n = cards[i].querySelector('.rnum');
+    if(n) n.textContent = i+1;
+    var b = cards[i].querySelector('.btn-del');
+    if(b) b.style.display = cards.length>1 ? '' : 'none';
+  }
+}
+
+/* ── 行追加 ── */
+function addRow(){
+  rid++;
+  var id = rid;
+  var div = document.createElement('div');
+  div.className = 'row-card';
+  div.id = 'rc'+id;
+  div.dataset.rid = id;
+  div.innerHTML =
+    '<div class="card-hdr">'
+    +'<span class="card-ttl">明細 <span class="rnum"></span></span>'
+    +'<button class="btn-del" onclick="delRow(\'rc'+id+'\')">削除</button>'
+    +'</div>'
+    +'<div class="fields">'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">幅 (mm)</span>'
+    +'<input type="number" class="iw" placeholder="例: 600" min="0" oninput="calc()">'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">高さ (mm)</span>'
+    +'<input type="number" class="ih" placeholder="例: 900" min="0" oninput="calc()">'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">枚数</span>'
+    +'<input type="number" class="iq" value="1" min="1" oninput="calc()">'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">ガラス種類</span>'
+    +'<select class="ig" onchange="calc()">'+GOPTS+'</select>'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">留め方</span>'
+    +'<div class="rrow">'
+    +'<label><input type="radio" name="fix'+id+'" value="caulking" checked onchange="calc()"> コーキング留め</label>'
+    +'<label><input type="radio" name="fix'+id+'" value="bead" onchange="calc()"> ビード留め</label>'
+    +'</div>'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">取り外し込み</span>'
+    +'<div class="rrow">'
+    +'<label><input type="radio" name="rem'+id+'" value="0" checked onchange="calc()"> なし</label>'
+    +'<label><input type="radio" name="rem'+id+'" value="1" onchange="calc()"> あり</label>'
+    +'</div>'
+    +'</div>'
+
+    +'<div class="fg">'
+    +'<span class="fglabel">防火コーキング</span>'
+    +'<div class="rrow">'
+    +'<label><input type="radio" name="fir'+id+'" value="0" checked onchange="calc()"> なし</label>'
+    +'<label><input type="radio" name="fir'+id+'" value="1" onchange="calc()"> あり</label>'
+    +'</div>'
+    +'</div>'
+
+    +'</div>';
+
+  document.getElementById('row-cards').appendChild(div);
+  renumber();
+  calc();
+}
+
+/* ── 行削除 ── */
+function delRow(id){
+  var el = document.getElementById(id);
+  if(el) el.parentNode.removeChild(el);
+  renumber();
+  calc();
+}
+
+/* ── 起動 ── */
+addRow();
 </script>
 </body>
 </html>
