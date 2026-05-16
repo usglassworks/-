@@ -342,7 +342,7 @@ tfoot td.l{text-align:left}
 
   <!-- テーブルセクション -->
   <div class="tbl-section">
-    <div id="tbl-title" class="tbl-title no-print">【社内用】 積算明細</div>
+    <div id="tbl-title" class="tbl-title">【社内用】 積算明細</div>
     <div id="tbl-body"></div>
   </div>
 
@@ -370,7 +370,7 @@ tfoot td.l{text-align:left}
   <!-- アクションバー -->
   <div class="action-bar no-print">
     <button type="button" class="btn-preview" onclick="previewPDF()">PDF確認プレビュー</button>
-    <button type="button" class="btn-pdf" onclick="window.print()">PDF出力（A4 横）</button>
+    <button type="button" class="btn-pdf" onclick="calc(); window.print()">PDF出力（A4 横）</button>
   </div>
 
 </div><!-- /.app -->
@@ -731,7 +731,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       h += '<td class="l" data-label="寸法">' + dim + '</td>';
       h += '<td class="l" data-label="品名">' + escH(pname) + '</td>';
       h += '<td class="c" data-label="枚数">' + (d.q || '—') + '</td>';
-      h += '<td class="td-detail" data-label="面積">' + fmtA(c.area) + '</td>';
+      h += '<td class="td-detail" data-label="面積">' + fmtA(c.area * d.q) + '</td>';
       h += '<td class="td-detail" data-label="材料単価">' + (typeof up === 'number' ? fmt(up) : up) + '</td>';
       h += '<td class="td-detail" data-label="材料原価">' + fmt(c.materialCost) + '</td>';
       h += '<td class="c td-detail" data-label="倍率">×' + c.mult.toFixed(2) + '</td>';
