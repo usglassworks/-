@@ -2,12 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ユーエス硝子 ガラス積算ツール</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#eef1f5;color:#222;font-size:14px}
-.app{max-width:1500px;margin:0 auto;padding:16px}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#eef1f5;color:#222;font-size:15px}
+.app{max-width:1500px;margin:0 auto;padding:12px}
+
+/* ── タッチ改善 ── */
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+input,select,textarea{-webkit-tap-highlight-color:transparent}
 
 /* ── Header ── */
 .hdr{background:linear-gradient(135deg,#0d2b50,#1a5f8c);color:#fff;padding:18px 24px;border-radius:14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
@@ -17,62 +21,67 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic
 /* ── Top bar ── */
 .topbar{display:flex;gap:10px;align-items:center;background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-wrap:wrap}
 .tblabel{font-weight:700;font-size:13px;white-space:nowrap}
-#pname{flex:1;min-width:180px;padding:8px 12px;border:1.5px solid #ccc;border-radius:7px;font-family:inherit;font-size:14px}
+#pname{flex:1;min-width:180px;padding:10px 14px;border:1.5px solid #ccc;border-radius:7px;font-family:inherit;font-size:16px;min-height:44px;-webkit-appearance:none;appearance:none}
 #pname:focus{outline:none;border-color:#1a5f8c}
 .toggle-wrap{display:flex;border:2px solid #1a5f8c;border-radius:8px;overflow:hidden}
-.tbtn{padding:8px 18px;border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;background:#fff;color:#1a5f8c}
+.tbtn{padding:10px 20px;border:none;font-size:14px;font-weight:700;font-family:inherit;background:#fff;color:#1a5f8c;min-height:44px}
 .tbtn:first-child{border-right:1px solid #1a5f8c}
 .tbtn.on{background:#1a5f8c;color:#fff}
 
-/* ── Settings panel ── */
-.settings-panel{background:#fff;border-radius:12px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;border-left:5px solid #0d2b50;overflow:hidden}
-.settings-panel summary{padding:14px 18px;font-weight:800;font-size:14px;color:#0d2b50;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
-.settings-panel summary::before{content:'▶';font-size:11px;transition:transform .2s}
-.settings-panel[open] summary::before{transform:rotate(90deg)}
+/* ── Settings panel（detailsなし・常時表示） ── */
+.settings-panel{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;border-left:5px solid #0d2b50;overflow:hidden}
+.settings-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;font-weight:800;font-size:14px;color:#0d2b50;background:none;border:none;font-family:inherit;text-align:left;min-height:48px}
+.settings-hdr-arrow{font-size:13px;transition:transform .25s;display:inline-block;transform:rotate(180deg)}
+.settings-hdr-arrow.open{transform:rotate(0deg)}
 .settings-inner{padding:16px 18px 18px;border-top:1px solid #eee;display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:900px){.settings-inner{grid-template-columns:1fr}}
 .sblock{background:#f8fafc;border-radius:8px;padding:14px;border:1px solid #e5ecf4}
 .sblock-title{font-weight:800;font-size:12px;color:#0d2b50;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase}
 .srow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .srow:last-child{margin-bottom:0}
-.srow label{font-size:12px;color:#444;white-space:nowrap}
-.srow input[type=number],.srow input[type=text]{padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;width:110px}
+.srow>label{font-size:13px;color:#444;display:flex;align-items:center;gap:6px;min-height:36px}
+.srow input[type=number],.srow input[type=text]{padding:8px 12px;border:1.5px solid #ddd;border-radius:6px;font-size:16px;font-family:inherit;width:110px;min-height:44px;-webkit-appearance:none;appearance:none}
 .srow input[type=number]:focus,.srow input[type=text]:focus{outline:none;border-color:#1a5f8c}
 .srow input.wide{width:200px}
-.srow input[type=radio]{accent-color:#1a5f8c;width:14px;height:14px}
+.srow input[type=radio]{accent-color:#1a5f8c;width:20px;height:20px;flex-shrink:0}
+.srow input[type=checkbox]{accent-color:#1a5f8c;width:20px;height:20px;flex-shrink:0}
 .mult-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:4px}
+@media(max-width:600px){.mult-grid{grid-template-columns:repeat(3,1fr)}}
 .mult-item{display:flex;flex-direction:column;gap:4px;align-items:center}
 .mult-item label{font-size:11px;color:#555;text-align:center}
-.mult-item input{width:70px;text-align:center;padding:5px 6px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit}
+.mult-item input{width:72px;text-align:center;padding:8px 4px;border:1.5px solid #ddd;border-radius:6px;font-size:15px;font-family:inherit;min-height:44px;-webkit-appearance:none;appearance:none}
 
 /* ── Row cards ── */
 .row-cards{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
 .row-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:5px solid #1a5f8c}
 .card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .card-ttl{font-weight:800;font-size:15px;color:#0d2b50}
-.btn-del{background:#e53935;color:#fff;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+.btn-del{background:#e53935;color:#fff;border:none;padding:10px 20px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;min-height:44px}
 .card-sections{display:flex;flex-direction:column;gap:12px}
 .csec-title{font-size:11px;font-weight:700;color:#1a5f8c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ecf7}
-.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
-.fields-wide{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.fields-wide{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .fg{display:flex;flex-direction:column;gap:5px}
 .fglabel{font-size:11px;font-weight:700;color:#555;letter-spacing:.04em}
-.fg input[type=number],.fg input[type=text],.fg select{padding:8px 10px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;width:100%}
-.fg input[type=number]:focus,.fg input[type=text]:focus,.fg select:focus{outline:none;border-color:#1a5f8c}
-.rrow{display:flex;gap:10px;flex-wrap:wrap;padding-top:3px}
-.rrow label{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:#333}
-.rrow input[type=radio]{width:15px;height:15px;accent-color:#1a5f8c}
-.rrow input[type=checkbox]{width:15px;height:15px;accent-color:#1a5f8c}
+.fg input[type=number],.fg input[type=text]{padding:10px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:16px;font-family:inherit;width:100%;min-height:44px;-webkit-appearance:none;appearance:none}
+.fg input[type=number]:focus,.fg input[type=text]:focus{outline:none;border-color:#1a5f8c}
+.fg select{padding:10px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:16px;font-family:inherit;width:100%;min-height:44px;background:#fff}
+.fg select:focus{outline:none;border-color:#1a5f8c}
+.rrow{display:flex;gap:4px;flex-wrap:wrap;padding-top:3px}
+.rrow label{display:flex;align-items:center;gap:7px;font-size:14px;color:#333;min-height:44px;padding:4px 10px;border-radius:6px}
+.rrow label:active{background:#eef5ff}
+.rrow input[type=radio]{width:20px;height:20px;accent-color:#1a5f8c;flex-shrink:0}
+.rrow input[type=checkbox]{width:20px;height:20px;accent-color:#1a5f8c;flex-shrink:0}
 .custom-fields{background:#f0f7ff;border-radius:8px;padding:12px;border:1px dashed #1a5f8c;margin-top:4px}
 .caulk-fields{background:#fff9f0;border-radius:8px;padding:12px;border:1px dashed #c08000;margin-top:4px}
 .add-fields{background:#f9f9f9;border-radius:8px;padding:12px;border:1px solid #e0e0e0;margin-top:4px}
 
 /* ── Add button ── */
-.btn-add{display:block;width:100%;padding:12px;background:#e8f0f9;border:2px dashed #1a5f8c;border-radius:10px;color:#1a5f8c;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center;margin-bottom:20px}
-.btn-add:hover{background:#d0e5f7}
+.btn-add{display:block;width:100%;padding:16px;background:#e8f0f9;border:2px dashed #1a5f8c;border-radius:10px;color:#1a5f8c;font-size:16px;font-weight:700;font-family:inherit;text-align:center;margin-bottom:20px;min-height:56px}
+.btn-add:active{background:#d0e5f7}
 
 /* ── Table section ── */
-.tbl-section{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:20px;margin-bottom:14px;overflow-x:auto}
+.tbl-section{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:20px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tbl-title{font-size:15px;font-weight:800;color:#0d2b50;margin-bottom:12px}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
 thead th{background:#0d2b50;color:#fff;padding:8px 6px;text-align:center;white-space:nowrap;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -88,6 +97,26 @@ tfoot td.l{text-align:left}
 .tr-grand td{background:#0d2b50;color:#fff;font-size:13px;border-top:2px solid #1a5f8c;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .tr-net td{background:#e8f5e9}
 .tr-quote td{background:#e3f2fd}
+
+/* ── モバイル：テーブル→カード表示 ── */
+@media screen and (max-width:900px){
+  .tbl-section{padding:12px 10px}
+  table{display:block;min-width:0}
+  thead{display:none}
+  tbody{display:block}
+  tfoot{display:none}
+  tbody tr{display:block;border:1px solid #d4dce8;border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#fff}
+  tbody tr:nth-child(even){background:#f7f9fc}
+  tbody td{display:flex;justify-content:space-between;align-items:baseline;border:none;border-bottom:1px solid #f0f0f0;padding:5px 2px;white-space:normal;text-align:right}
+  tbody td:last-child{border-bottom:none}
+  tbody td::before{content:attr(data-label);font-weight:700;color:#0d2b50;font-size:11px;flex:0 0 auto;margin-right:10px;text-align:left;white-space:nowrap}
+  tbody td.td-detail{display:none}
+  tbody td.td-total{background:#ecf3fb;border-radius:0 0 8px 8px;margin:4px -12px -10px;padding:8px 14px;font-size:14px;font-weight:800;border-top:2px solid #1a5f8c}
+  /* モバイル用合計カード */
+  .mobile-totals{display:block;margin-top:12px}
+  .mt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:7px;margin-bottom:5px;font-size:13px;font-weight:600}
+}
+.mobile-totals{display:none}
 
 /* ── Banners ── */
 .banner-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
@@ -107,24 +136,44 @@ tfoot td.l{text-align:left}
 
 /* ── PDF button ── */
 .action-bar{margin-bottom:24px}
-.btn-pdf{background:#c62828;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer}
-.btn-pdf:hover{background:#b71c1c}
+.btn-pdf{background:#c62828;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:800;font-family:inherit;min-height:56px;width:100%}
+@media(min-width:600px){.btn-pdf{width:auto}}
+.btn-pdf:active{background:#b71c1c}
 
-/* ── Print ── */
+/* ── 印刷：テーブルを元に戻す ── */
 @media print{
   @page{size:A4 landscape;margin:10mm 10mm 6mm 10mm}
   body{background:#fff;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo',sans-serif}
   .no-print{display:none!important}
+  .mobile-totals{display:none!important}
   .app{padding:0;max-width:100%}
   .tbl-section{box-shadow:none;padding:0;border-radius:0;overflow:visible;margin-bottom:6mm}
   .tbl-title{font-size:13px;margin-bottom:6px}
-  table{min-width:auto;font-size:10px}
+  table{display:table!important;min-width:auto;width:100%;font-size:10px}
+  thead{display:table-header-group!important}
+  tbody{display:table-row-group!important}
+  tfoot{display:table-footer-group!important}
+  tr{display:table-row!important;border:none!important;border-radius:0!important;padding:0!important;margin:0!important;background:none!important}
+  tbody tr:nth-child(even){background:#f7f9fc!important}
+  th,td{display:table-cell!important}
+  thead tr{visibility:visible!important}
+  tbody td::before{display:none!important}
+  tbody td.td-detail{display:table-cell!important}
+  tbody td.td-total{background:none!important;border-radius:0!important;margin:0!important;padding:5px 4px!important;font-size:inherit!important;border-top:none!important}
+  tfoot tr{display:table-row!important;border-radius:0!important;padding:0!important}
+  tfoot td{display:table-cell!important;text-align:right!important;padding:8px 6px!important;white-space:nowrap!important}
+  tfoot td.l{text-align:left!important;flex:none!important}
   thead th{padding:6px 4px;font-size:9.5px}
-  tbody td,tfoot td{padding:5px 4px}
-  .tr-grand td{font-size:11px}
+  tbody td,tfoot td{padding:5px 4px;white-space:nowrap!important}
+  .tr-sub td{background:#ecf3fb!important;border-top:2px solid #1a5f8c!important}
+  .tr-misc td{background:#fff8e1!important}
+  .tr-disc td{background:#fef3f3!important}
+  .tr-grand td{background:#0d2b50!important;color:#fff!important;font-size:11px}
+  .tr-net td{background:#e8f5e9!important}
+  .tr-quote td{background:#e3f2fd!important}
   .print-summary{display:block!important}
   .print-summary-inner{border:1.5px solid #0d2b50;border-radius:6px;padding:10px 14px;margin-top:6mm}
-  .print-summary-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;font-size:11px}
+  .print-summary-row{display:flex!important;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;font-size:11px}
   .print-summary-row:last-child{border-bottom:none;font-weight:800;font-size:12px}
   .print-company{font-size:11px;color:#0d2b50;font-weight:700;margin-bottom:3mm}
 }
@@ -146,15 +195,18 @@ tfoot td.l{text-align:left}
     <input type="text" id="pname" placeholder="案件名・現場名（任意）" oninput="calc()">
     <span class="tblabel">表示モード</span>
     <div class="toggle-wrap">
-      <button id="btn-int" class="tbtn on" onclick="setView('internal')">社内用</button>
-      <button id="btn-cus" class="tbtn"    onclick="setView('customer')">元請け提出用</button>
+      <button id="btn-int" class="tbtn on" type="button" onclick="setView('internal')">社内用</button>
+      <button id="btn-cus" class="tbtn"    type="button" onclick="setView('customer')">元請け提出用</button>
     </div>
   </div>
 
-  <!-- ══ 設定パネル ══ -->
-  <details class="settings-panel no-print" id="settings-panel">
-    <summary>設定・見積書オプション</summary>
-    <div class="settings-inner">
+  <!-- ══ 設定パネル（detailsなし・常時表示） ══ -->
+  <div class="settings-panel no-print" id="settings-panel">
+    <button type="button" class="settings-hdr" onclick="toggleSettings()">
+      <span>⚙ 設定・見積書オプション</span>
+      <span class="settings-hdr-arrow open" id="settings-arrow">▲</span>
+    </button>
+    <div class="settings-inner" id="settings-inner">
 
       <!-- 案件設定 -->
       <div class="sblock">
@@ -257,11 +309,11 @@ tfoot td.l{text-align:left}
       </div>
 
     </div>
-  </details>
+  </div>
 
   <!-- ══ 行カード ══ -->
   <div id="row-cards" class="row-cards no-print"></div>
-  <button class="btn-add no-print" onclick="addRow()">＋ 明細を追加</button>
+  <button type="button" class="btn-add no-print" onclick="addRow()">＋ 明細を追加</button>
 
   <!-- ══ テーブルセクション ══ -->
   <div class="tbl-section">
@@ -292,7 +344,7 @@ tfoot td.l{text-align:left}
 
   <!-- ══ PDFボタン ══ -->
   <div class="action-bar no-print">
-    <button class="btn-pdf" onclick="window.print()">PDF出力（A4 横）</button>
+    <button type="button" class="btn-pdf" onclick="window.print()">PDF出力（A4 横）</button>
   </div>
 
 </div>
@@ -602,18 +654,13 @@ function calc(){
     quoteAmt = q.qaTax === 'incl' ? Math.round(q.qaManual / 1.1) : q.qaManual;
   }
 
-  /* テーブル描画 */
   renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q);
-
-  /* バナー更新 */
   renderSummary(totals, netAmt, quoteAmt, s, q);
-
-  /* 印刷用サマリー更新 */
   renderPrintSummary(totals, netAmt, quoteAmt, s, q);
 }
 
 /* ══════════════════════════════════════════════
-   テーブル描画
+   テーブル描画（data-label付き）
 ══════════════════════════════════════════════ */
 function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
   var isInt = viewMode === 'internal';
@@ -639,27 +686,27 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       var up  = isCustom(d.g) ? (d.priceMode==='sqm' ? d.customSqm : '—') : (GP[d.g]||0);
       var rowT = c.glassPrice+c.constructionBase+c.removalCost+c.caulkingCost+c.caulkingRemoval+c.disposalCost+(d.addInSales?c.addAmt:0);
       h += '<tr>';
-      h += '<td class="c">'+(i+1)+'</td>';
-      h += '<td class="l">'+dim+'</td>';
-      h += '<td class="l">'+escH(pname)+'</td>';
-      h += '<td class="c">'+(d.q||'—')+'</td>';
-      h += '<td>'+fmtA(c.area)+'</td>';
-      h += '<td>'+(typeof up==='number'?fmt(up):up)+'</td>';
-      h += '<td>'+fmt(c.materialCost)+'</td>';
-      h += '<td class="c">×'+c.mult.toFixed(2)+'</td>';
-      h += '<td>'+fmt(c.glassPrice)+'</td>';
-      h += '<td>'+(c.mirror?'(定額)':fmt(c.cr))+'</td>';
-      h += '<td>'+fmt(c.constructionBase)+'</td>';
-      h += '<td>'+fmt(c.removalCost)+'</td>';
-      h += '<td>'+(d.fix==='caulking'?fmtA(c.caulkMeters):'0.000')+'</td>';
-      h += '<td>'+(d.fix==='caulking'?fmt(ckr):'—')+'</td>';
-      h += '<td>'+fmt(c.caulkingCost)+'</td>';
-      h += '<td>'+(d.fix==='caulking'?fmt(rvr):'—')+'</td>';
-      h += '<td>'+fmt(c.caulkingRemoval)+'</td>';
-      h += '<td>'+fmt(c.disposalCost)+'</td>';
-      h += '<td>'+(c.addAmt>0 ? fmt(c.addAmt) : '—')+'</td>';
-      h += '<td><strong>'+fmt(rowT)+'</strong></td>';
-      h += '<td>'+fmt(c.profitRow)+'</td>';
+      h += '<td class="c" data-label="No.">'+(i+1)+'</td>';
+      h += '<td class="l" data-label="寸法">'+dim+'</td>';
+      h += '<td class="l" data-label="品名">'+escH(pname)+'</td>';
+      h += '<td class="c" data-label="枚数">'+(d.q||'—')+'</td>';
+      h += '<td class="td-detail" data-label="面積">'+fmtA(c.area)+'</td>';
+      h += '<td class="td-detail" data-label="材料単価">'+(typeof up==='number'?fmt(up):up)+'</td>';
+      h += '<td class="td-detail" data-label="材料原価">'+fmt(c.materialCost)+'</td>';
+      h += '<td class="c td-detail" data-label="倍率">×'+c.mult.toFixed(2)+'</td>';
+      h += '<td data-label="ガラス売価">'+fmt(c.glassPrice)+'</td>';
+      h += '<td class="td-detail" data-label="施工単価">'+(c.mirror?'(定額)':fmt(c.cr))+'</td>';
+      h += '<td data-label="施工工賃">'+fmt(c.constructionBase)+'</td>';
+      h += '<td data-label="取外代">'+fmt(c.removalCost)+'</td>';
+      h += '<td class="td-detail" data-label="CK m数">'+(d.fix==='caulking'?fmtA(c.caulkMeters):'0.000')+'</td>';
+      h += '<td class="td-detail" data-label="CK単価">'+(d.fix==='caulking'?fmt(ckr):'—')+'</td>';
+      h += '<td data-label="CK費">'+fmt(c.caulkingCost)+'</td>';
+      h += '<td class="td-detail" data-label="剥単価">'+(d.fix==='caulking'?fmt(rvr):'—')+'</td>';
+      h += '<td data-label="剥費">'+fmt(c.caulkingRemoval)+'</td>';
+      h += '<td data-label="廃棄代">'+fmt(c.disposalCost)+'</td>';
+      h += '<td data-label="追加費用">'+(c.addAmt>0 ? fmt(c.addAmt) : '—')+'</td>';
+      h += '<td class="td-total" data-label="行合計"><strong>'+fmt(rowT)+'</strong></td>';
+      h += '<td data-label="粗利">'+fmt(c.profitRow)+'</td>';
       h += '</tr>';
     }
     h += '</tbody><tfoot>';
@@ -693,6 +740,17 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
 
     h += '</tfoot></table>';
 
+    /* モバイル用合計カード */
+    h += '<div class="mobile-totals">';
+    h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>'+fmt(totals.iSub)+'</span></div>';
+    h += '<div class="mt-row" style="background:#fff8e1"><span>'+makeMiscLabel(totals)+'</span><span>'+fmt(totals.misc)+'</span></div>';
+    if(s.discAmt > 0){
+      h += '<div class="mt-row" style="background:#fef3f3"><span>値引き'+(s.discName?' ('+escH(s.discName)+')':'')+'</span><span>▲ '+fmt(s.discAmt)+'</span></div>';
+    }
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>合計金額</span><span>'+fmt(totals.iGrand)+'</span></div>';
+    h += '<div class="mt-row" style="background:#e8f5e9"><span>粗利（粗利率 '+totals.profitRate.toFixed(1)+'%）</span><span>'+fmt(totals.iProfit)+'</span></div>';
+    h += '</div>';
+
   } else {
     /* ── 元請け用 11列 ── */
     h += '<table><thead><tr>';
@@ -707,17 +765,17 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       var pname = (d.customName && isCustom(d.g)) ? d.customName : d.g;
       var rowT = cd.glassPrice+cd.constructionBase+cd.removalCost+cd.caulkingCost+cd.caulkingRemoval+cd.disposalCost+cd.addAmt;
       h += '<tr>';
-      h += '<td class="c">'+(i+1)+'</td>';
-      h += '<td class="l">'+dim+'</td>';
-      h += '<td class="l">'+escH(pname)+'</td>';
-      h += '<td class="c">'+(d.q||'—')+'</td>';
-      h += '<td>'+fmt(cd.glassPrice)+'</td>';
-      h += '<td>'+fmt(cd.constructionBase+cd.removalCost)+'</td>';
-      h += '<td>'+fmt(cd.caulkingCost)+'</td>';
-      h += '<td>'+fmt(cd.caulkingRemoval)+'</td>';
-      h += '<td>'+fmt(cd.disposalCost)+'</td>';
-      h += '<td>'+(cd.addAmt>0?fmt(cd.addAmt):'—')+'</td>';
-      h += '<td><strong>'+fmt(rowT)+'</strong></td>';
+      h += '<td class="c" data-label="No.">'+(i+1)+'</td>';
+      h += '<td class="l" data-label="寸法">'+dim+'</td>';
+      h += '<td class="l" data-label="品名">'+escH(pname)+'</td>';
+      h += '<td class="c" data-label="枚数">'+(d.q||'—')+'</td>';
+      h += '<td data-label="ガラス金額">'+fmt(cd.glassPrice)+'</td>';
+      h += '<td data-label="施工工賃">'+fmt(cd.constructionBase+cd.removalCost)+'</td>';
+      h += '<td data-label="CK費">'+fmt(cd.caulkingCost)+'</td>';
+      h += '<td data-label="CK剥がし代">'+fmt(cd.caulkingRemoval)+'</td>';
+      h += '<td data-label="廃棄代">'+fmt(cd.disposalCost)+'</td>';
+      h += '<td data-label="追加費用">'+(cd.addAmt>0?fmt(cd.addAmt):'—')+'</td>';
+      h += '<td class="td-total" data-label="行合計"><strong>'+fmt(rowT)+'</strong></td>';
       h += '</tr>';
     }
     h += '</tbody><tfoot>';
@@ -758,6 +816,22 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     }
 
     h += '</tfoot></table>';
+
+    /* モバイル用合計カード */
+    h += '<div class="mobile-totals">';
+    h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>'+fmt(totals.cSub)+'</span></div>';
+    h += '<div class="mt-row" style="background:#fff8e1"><span>'+makeMiscLabel(totals)+'</span><span>'+fmt(totals.misc)+'</span></div>';
+    if(s.discAmt > 0){
+      h += '<div class="mt-row" style="background:#fef3f3"><span>値引き'+(s.discName?' ('+escH(s.discName)+')':'')+'</span><span>▲ '+fmt(s.discAmt)+'</span></div>';
+    }
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>見積金額合計</span><span>'+fmt(totals.cGrand)+'</span></div>';
+    if(q.showNET){
+      h += '<div class="mt-row" style="background:#e8f5e9"><span>NET金額（税抜）</span><span>'+fmt(netAmt)+'</span></div>';
+    }
+    if(q.showQA){
+      h += '<div class="mt-row" style="background:#e3f2fd"><span>お見積書金額（税抜）</span><span>'+fmt(quoteAmt)+'</span></div>';
+    }
+    h += '</div>';
   }
 
   gv('tbl-body').innerHTML = h;
@@ -783,7 +857,6 @@ function renderSummary(totals, netAmt, quoteAmt, s, q){
   }
 
   /* 見積サマリーボックス */
-  var qbox = gv('quote-summary-box');
   var diff = quoteAmt - netAmt;
   var qh = '';
   if(q.showNET){
@@ -859,6 +932,18 @@ function setView(mode){
 }
 
 /* ══════════════════════════════════════════════
+   設定パネル開閉
+══════════════════════════════════════════════ */
+function toggleSettings(){
+  var inner = gv('settings-inner');
+  var arrow = gv('settings-arrow');
+  if(!inner) return;
+  var isOpen = inner.style.display !== 'none';
+  inner.style.display = isOpen ? 'none' : '';
+  if(arrow) arrow.className = 'settings-hdr-arrow' + (isOpen ? '' : ' open');
+}
+
+/* ══════════════════════════════════════════════
    行番号更新
 ══════════════════════════════════════════════ */
 function renumber(){
@@ -884,14 +969,11 @@ function updateRow(el){
   var ckf = card.querySelector('.caulk-fields');
   var id = card.dataset.rid;
 
-  /* カスタム */
   if(cf) cf.style.display = isCustom(gType) ? '' : 'none';
 
-  /* 施工設定（コーキング） */
   var fixVal = radio(card, 'fix'+id);
   if(ckf) ckf.style.display = (fixVal === 'caulking') ? '' : 'none';
 
-  /* priceMode に応じた入力欄表示 */
   var priceMode = radio(card, 'pm'+id);
   var sqmRow = card.querySelector('.pm-sqm-row');
   var matRow = card.querySelector('.pm-mat-row');
@@ -900,7 +982,6 @@ function updateRow(el){
   if(matRow)  matRow.style.display = (priceMode === 'mat')  ? '' : 'none';
   if(sellRow) sellRow.style.display= (priceMode === 'sell') ? '' : 'none';
 
-  /* お見積書金額モード */
   var qaModeVal = globalRadio('qaMode');
   var nmRow = gv('qa-net-mult-row');
   var mRow  = gv('qa-manual-row');
