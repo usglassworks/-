@@ -103,6 +103,11 @@ tfoot td.l{text-align:left}
 .cqb-label{font-size:18px;color:#0d2b50;margin-bottom:8px;font-weight:700}
 .cqb-amount{font-size:38px;color:#0d2b50;font-weight:900;letter-spacing:.02em}
 .cqb-sub{font-size:13px;color:#555;margin-top:6px}
+.cqb-net{margin-top:10px;font-size:20px;color:#0d2b50;font-weight:900}
+/* 元請け用シンプル合計表示 */
+.customer-total-plain{margin-top:14px;text-align:left;font-weight:900;color:#111;page-break-inside:avoid;padding-top:10px;border-top:2px solid #0d2b50}
+.customer-total-plain .quote-line{font-size:18px;margin-bottom:6px}
+.customer-total-plain .net-line{font-size:16px}
 
 /* モバイル：テーブル→カード表示 */
 @media screen and (max-width:900px){
@@ -211,7 +216,10 @@ tfoot td.l{text-align:left}
 <!-- プレビューバー（プレビューモード時に固定表示） -->
 <div id="preview-bar">
   <span>プレビューモード — PDFに印刷される内容</span>
-  <button type="button" class="btn-exit" onclick="exitPreview()">編集画面に戻る</button>
+  <div style="display:flex;gap:10px">
+    <button type="button" class="btn-exit" onclick="printPDF()">PDF出力</button>
+    <button type="button" class="btn-exit" onclick="exitPreview()">編集画面に戻る</button>
+  </div>
 </div>
 
 <div class="app">
@@ -370,7 +378,7 @@ tfoot td.l{text-align:left}
   <!-- アクションバー -->
   <div class="action-bar no-print">
     <button type="button" class="btn-preview" onclick="previewPDF()">PDF確認プレビュー</button>
-    <button type="button" class="btn-pdf" onclick="calc(); window.print()">PDF出力（A4 横）</button>
+    <button type="button" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
 
 </div><!-- /.app -->
@@ -502,7 +510,8 @@ function getRowData(el){
     addAmt:      parseFloat((el.querySelector('.add-amount')  ||{value:0}).value) || 0,
     addInCost:   el.querySelector('.add-in-cost')  ? el.querySelector('.add-in-cost').checked  : false,
     addInSales:  el.querySelector('.add-in-sales') ? el.querySelector('.add-in-sales').checked : false,
-    addInCust:   el.querySelector('.add-in-cust')  ? el.querySelector('.add-in-cust').checked  : false
+    addInCust:   el.querySelector('.add-in-cust')  ? el.querySelector('.add-in-cust').checked  : false,
+    fixtureNo:   (el.querySelector('.fixture-no')  || {value:''}).value || ''
   };
 }
 
@@ -710,7 +719,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
   if(isInt){
     /* 社内用 21列 */
     h += '<table><thead><tr>';
-    h += '<th>No.</th><th>寸法(mm)</th><th>品名</th><th>枚数</th><th>面積(m²)</th>';
+    h += '<th>No.</th><th>建具番号</th><th>寸法(mm)</th><th>品名</th><th>枚数</th><th>面積(m²)</th>';
     h += '<th>材料単価</th><th>材料原価</th><th>倍率</th><th>ガラス売価</th>';
     h += '<th>施工単価</th><th>施工工賃</th><th>取外代</th>';
     h += '<th>CK m数</th><th>CK単価</th><th>CK費</th><th>剥単価</th><th>剥費</th>';
@@ -728,6 +737,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
                + (d.addInSales ? c.addAmt : 0);
       h += '<tr>';
       h += '<td class="c" data-label="No.">' + (i+1) + '</td>';
+      h += '<td class="l" data-label="建具番号">' + (d.fixtureNo ? escH(d.fixtureNo) : '—') + '</td>';
       h += '<td class="l" data-label="寸法">' + dim + '</td>';
       h += '<td class="l" data-label="品名">' + escH(pname) + '</td>';
       h += '<td class="c" data-label="枚数">' + (d.q || '—') + '</td>';
@@ -752,7 +762,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     }
     h += '</tbody><tfoot>';
     h += '<tr class="tr-sub">';
-    h += '<td colspan="4" class="l">小計</td><td>—</td><td>—</td>';
+    h += '<td colspan="5" class="l">小計</td><td>—</td><td>—</td>';
     h += '<td>' + fmt(totals.iSumMAT) + '</td><td>—</td>';
     h += '<td>' + fmt(totals.iSumGP) + '</td><td>—</td>';
     h += '<td>' + fmt(totals.iSumCC) + '</td><td>' + fmt(totals.iSumRC) + '</td>';
@@ -760,13 +770,13 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     h += '<td>—</td><td>' + fmt(totals.iSumCKR) + '</td>';
     h += '<td>' + fmt(totals.iSumDC) + '</td><td>' + fmt(totals.iSumADD) + '</td>';
     h += '<td><strong>' + fmt(totals.iSub) + '</strong></td><td>—</td></tr>';
-    h += '<tr class="tr-misc"><td colspan="20" class="l">' + makeMiscLabel(totals) + '</td>';
+    h += '<tr class="tr-misc"><td colspan="21" class="l">' + makeMiscLabel(totals) + '</td>';
     h += '<td><strong>' + fmt(totals.misc) + '</strong></td></tr>';
     if(s.discAmt > 0){
-      h += '<tr class="tr-disc"><td colspan="20" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
+      h += '<tr class="tr-disc"><td colspan="21" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
       h += '<td><strong>▲ ' + fmt(s.discAmt) + '</strong></td></tr>';
     }
-    h += '<tr class="tr-grand"><td colspan="20" class="l">合計金額</td>';
+    h += '<tr class="tr-grand"><td colspan="21" class="l">合計金額</td>';
     h += '<td><strong>' + fmt(totals.iGrand) + '</strong></td></tr>';
     h += '</tfoot></table>';
 
@@ -780,77 +790,76 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     h += '</div>';
 
   } else {
-    /* 元請け用 11列 */
+    /* 元請け用 13列: No / 建具番号 / 品名 / 寸法 / 枚数 / 総面積 / ガラス金額 / 施工工賃 / CKm数 / CK費 / 剥がし代 / 廃棄代 / 小計 */
+    var totalCArea = 0, totalCKm = 0;
+    for(var i = 0; i < rows; i++){
+      totalCArea += calcs[i].area * datas[i].q;
+      totalCKm   += calcs[i].caulkMeters;
+    }
+
     h += '<table><thead><tr>';
-    h += '<th>No.</th><th>寸法(mm)</th><th>品名</th><th>枚数</th>';
-    h += '<th>ガラス金額</th><th>施工工賃</th><th>コーキング費</th>';
-    h += '<th>コーキング剥がし代</th><th>廃棄代</th><th>追加費用</th><th>行合計</th>';
+    h += '<th>No.</th><th>建具番号</th><th>品名</th><th>寸法(mm)</th><th>枚数</th>';
+    h += '<th>総面積(m²)</th><th>ガラス金額</th><th>施工工賃</th>';
+    h += '<th>CK m数</th><th>CK費</th><th>剥がし代</th><th>廃棄代</th><th>小計</th>';
     h += '</tr></thead><tbody>';
 
     for(var i = 0; i < rows; i++){
-      var d = datas[i], cd = cDisp[i];
+      var d = datas[i], c = calcs[i], cd = cDisp[i];
       var dim = (d.w && d.h) ? d.w + ' × ' + d.h : '—';
       var pname = (d.customName && isCustom(d.g)) ? d.customName : d.g;
       var rowT = cd.glassPrice + cd.constructionBase + cd.removalCost
                + cd.caulkingCost + cd.caulkingRemoval + cd.disposalCost + cd.addAmt;
       h += '<tr>';
       h += '<td class="c" data-label="No.">' + (i+1) + '</td>';
-      h += '<td class="l" data-label="寸法">' + dim + '</td>';
+      h += '<td class="l" data-label="建具番号">' + (d.fixtureNo ? escH(d.fixtureNo) : '—') + '</td>';
       h += '<td class="l" data-label="品名">' + escH(pname) + '</td>';
+      h += '<td class="l" data-label="寸法">' + dim + '</td>';
       h += '<td class="c" data-label="枚数">' + (d.q || '—') + '</td>';
+      h += '<td class="td-detail" data-label="総面積">' + fmtA(c.area * d.q) + '</td>';
       h += '<td data-label="ガラス金額">' + fmt(cd.glassPrice) + '</td>';
       h += '<td data-label="施工工賃">' + fmt(cd.constructionBase + cd.removalCost) + '</td>';
+      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '—') + '</td>';
       h += '<td data-label="CK費">' + fmt(cd.caulkingCost) + '</td>';
-      h += '<td data-label="CK剥がし代">' + (cd.caulkingRemoval > 0 ? fmt(cd.caulkingRemoval) : '0') + '</td>';
+      h += '<td data-label="剥がし代">' + (cd.caulkingRemoval > 0 ? fmt(cd.caulkingRemoval) : '0') + '</td>';
       h += '<td data-label="廃棄代">' + (cd.disposalCost > 0 ? fmt(cd.disposalCost) : '0') + '</td>';
-      h += '<td data-label="追加費用">' + (cd.addAmt > 0 ? fmt(cd.addAmt) : '—') + '</td>';
-      h += '<td class="td-total" data-label="行合計"><strong>' + fmt(rowT) + '</strong></td>';
+      h += '<td class="td-total" data-label="小計"><strong>' + fmt(rowT) + '</strong></td>';
       h += '</tr>';
     }
     h += '</tbody><tfoot>';
-    h += '<tr class="tr-sub"><td colspan="4" class="l">小計</td>';
+    h += '<tr class="tr-sub"><td colspan="5" class="l">小計</td>';
+    h += '<td>' + fmtA(totalCArea) + '</td>';
     h += '<td>' + fmt(totals.cSumGP) + '</td>';
     h += '<td>' + fmt(totals.cSumCC + totals.cSumRC) + '</td>';
+    h += '<td>' + fmtA(totalCKm) + '</td>';
     h += '<td>' + fmt(totals.cSumCK) + '</td>';
     h += '<td>' + fmt(totals.cSumCKR) + '</td>';
     h += '<td>' + fmt(totals.cSumDC) + '</td>';
-    h += '<td>' + fmt(totals.cSumADD) + '</td>';
     h += '<td><strong>' + fmt(totals.cSub) + '</strong></td></tr>';
-    h += '<tr class="tr-misc"><td colspan="10" class="l">' + makeMiscLabel(totals) + '</td>';
+    h += '<tr class="tr-misc"><td colspan="12" class="l">' + makeMiscLabel(totals) + '</td>';
     h += '<td><strong>' + fmt(totals.misc) + '</strong></td></tr>';
     if(s.discAmt > 0){
-      h += '<tr class="tr-disc"><td colspan="10" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
+      h += '<tr class="tr-disc"><td colspan="12" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
       h += '<td><strong>▲ ' + fmt(s.discAmt) + '</strong></td></tr>';
     }
-    h += '<tr class="tr-grand"><td colspan="10" class="l"><strong>見積金額合計</strong></td>';
-    h += '<td><strong>' + fmt(totals.cGrand) + '</strong></td></tr>';
-    if(q.showNET){
-      h += '<tr class="tr-net"><td colspan="10" class="l">NET金額（税抜）</td>';
-      h += '<td><strong>' + fmt(netAmt) + '</strong></td></tr>';
-    }
-    if(q.showQA){
-      h += '<tr class="tr-quote"><td colspan="10" class="l">お見積書金額（税抜）</td>';
-      h += '<td><strong>' + fmt(quoteAmt) + '</strong></td></tr>';
-    }
+    h += '<tr class="tr-grand"><td colspan="12" class="l"><strong>見積金額合計</strong></td>';
+    h += '<td><strong>' + fmt(quoteAmt) + '</strong></td></tr>';
     h += '</tfoot></table>';
 
-    /* お見積書金額 大表示 */
-    if(q.showQA){
-      h += '<div class="customer-quote-big">';
-      h += '<div class="cqb-label">お見積書金額（税抜）</div>';
-      h += '<div class="cqb-amount">¥ ' + fmt(quoteAmt) + '</div>';
-      h += '<div class="cqb-sub">（税込　¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '）</div>';
-      h += '</div>';
+    /* 表下シンプル合計表示 */
+    h += '<div class="customer-total-plain">';
+    h += '<div class="quote-line">見積金額合計：' + fmt(quoteAmt) + ' 円</div>';
+    if(q.showNET){
+      h += '<div class="net-line">NET ¥' + fmt(netAmt) + '円</div>';
     }
+    h += '</div>';
 
     /* モバイル合計 */
     h += '<div class="mobile-totals">';
     h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>' + fmt(totals.cSub) + '</span></div>';
     h += '<div class="mt-row" style="background:#fff8e1"><span>' + makeMiscLabel(totals) + '</span><span>' + fmt(totals.misc) + '</span></div>';
     if(s.discAmt > 0) h += '<div class="mt-row" style="background:#fef3f3"><span>値引き</span><span>▲ ' + fmt(s.discAmt) + '</span></div>';
-    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>見積金額合計</span><span>' + fmt(totals.cGrand) + '</span></div>';
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>見積金額合計</span><span>' + fmt(quoteAmt) + '</span></div>';
     if(q.showNET) h += '<div class="mt-row" style="background:#e8f5e9"><span>NET金額（税抜）</span><span>' + fmt(netAmt) + '</span></div>';
-    if(q.showQA)  h += '<div class="mt-row" style="background:#e3f2fd"><span>お見積書金額（税抜）</span><span>' + fmt(quoteAmt) + '</span></div>';
     h += '</div>';
   }
 
@@ -892,8 +901,14 @@ function renderSummary(totals, netAmt, quoteAmt, s, q){
   gv('quote-summary-inner').innerHTML = qh || '<div style="color:#999;font-size:12px">見積書設定で金額を確認できます</div>';
 
   var pn = (gv('pname') || {value:''}).value;
-  var ttl = isInt ? '【社内用】 積算明細' : '【元請け提出用】 見積明細';
-  if(pn) ttl += ' — ' + pn;
+  var qtitle = (gv('q-title') || {value:'お見積書'}).value || 'お見積書';
+  var ttl;
+  if(isInt){
+    ttl = '【社内用】 積算明細';
+    if(pn) ttl += ' — ' + pn;
+  } else {
+    ttl = pn ? pn + ' ' + qtitle : qtitle;
+  }
   gv('tbl-title').textContent = ttl;
 }
 
@@ -957,6 +972,11 @@ function previewPDF(){
 
 function exitPreview(){
   document.body.classList.remove('preview-mode');
+}
+
+function printPDF(){
+  calc();
+  setTimeout(function(){ window.print(); }, 100);
 }
 
 /* ══════════════════════════════════════════════
@@ -1059,6 +1079,8 @@ function addRow(){
       <div>
         <div class="csec-title">基本情報</div>
         <div class="fields">
+          <div class="fg"><span class="fglabel">建具番号</span>
+            <input type="text" class="fixture-no" placeholder="例：AW-1" oninput="calc()"></div>
           <div class="fg"><span class="fglabel">幅 (mm)</span>
             <input type="number" class="iw" placeholder="例: 600" min="0" step="1" oninput="calc()"></div>
           <div class="fg"><span class="fglabel">高さ (mm)</span>
