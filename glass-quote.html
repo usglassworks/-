@@ -145,19 +145,20 @@ tfoot td.l{text-align:left}
 .quote-row .qv{font-weight:700;color:#0d2b50}
 
 /* Action bar */
-.action-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
-.btn-preview{background:#1a5f8c;color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;min-height:56px}
+.action-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;position:relative;z-index:1000}
+.btn-preview{background:#1a5f8c;color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:1001;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-preview:active{background:#0d4f7c}
-.btn-pdf{background:#c62828;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:800;font-family:inherit;min-height:56px}
+.btn-pdf{background:#c62828;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:1001;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-pdf:active{background:#b71c1c}
 
 /* プレビューバー */
-#preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:auto!important}
 #preview-bar span{font-weight:700;font-size:14px}
-#preview-bar .btn-exit{background:#fff;color:#0d2b50;border:none;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px}
+#preview-bar .btn-exit{background:#fff;color:#0d2b50;border:none;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative;z-index:1}
 
 /* プレビューモード */
-.preview-mode #preview-bar{display:flex}
+.preview-mode #preview-bar{display:flex!important;pointer-events:auto!important}
+.preview-mode #preview-bar button{pointer-events:auto!important}
 .preview-mode .app{padding-top:70px}
 .preview-mode .hdr,
 .preview-mode .topbar,
@@ -229,8 +230,8 @@ tfoot td.l{text-align:left}
 <div id="preview-bar">
   <span>プレビューモード — PDFに印刷される内容</span>
   <div style="display:flex;gap:10px">
-    <button type="button" class="btn-exit" onclick="printPDF()">PDF出力</button>
-    <button type="button" class="btn-exit" onclick="exitPreview()">編集画面に戻る</button>
+    <button type="button" id="previewPdfBtn" class="btn-exit">PDF出力</button>
+    <button type="button" id="exitPreviewBtn" class="btn-exit">編集画面に戻る</button>
   </div>
 </div>
 
@@ -389,8 +390,8 @@ tfoot td.l{text-align:left}
 
   <!-- アクションバー -->
   <div class="action-bar no-print">
-    <button type="button" class="btn-preview" onclick="previewPDF()">PDF確認プレビュー</button>
-    <button type="button" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
+    <button type="button" id="previewBtn" class="btn-preview">PDF確認プレビュー</button>
+    <button type="button" id="pdfBtn" class="btn-pdf">PDF出力（A4 横）</button>
   </div>
 
 </div><!-- /.app -->
@@ -722,8 +723,7 @@ function calc(){
    テーブル描画
 ══════════════════════════════════════════════ */
 function makeMiscLabel(totals){
-  var label = totals.totalQty >= 4 ? '4枚以上' : '1〜3枚';
-  return '諸経費（総枚数 ' + totals.totalQty + ' 枚 ／ ' + label + '）';
+  return '諸経費';
 }
 
 function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
@@ -989,10 +989,34 @@ function exitPreview(){
   document.body.classList.remove('preview-mode');
 }
 
+var printingLock = false;
+
 function printPDF(){
+  if(printingLock) return;
+  printingLock = true;
   calc();
-  setTimeout(function(){ window.print(); }, 100);
+  if(document.activeElement && document.activeElement.blur){
+    document.activeElement.blur();
+  }
+  setTimeout(function(){
+    window.print();
+    setTimeout(function(){ printingLock = false; }, 800);
+  }, 150);
 }
+
+function bindButtons(){
+  function tap(btn, fn){
+    if(!btn) return;
+    btn.addEventListener('click',    function(e){ e.preventDefault(); e.stopPropagation(); fn(); }, false);
+    btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); fn(); }, false);
+  }
+  tap(gv('pdfBtn'),        printPDF);
+  tap(gv('previewPdfBtn'), printPDF);
+  tap(gv('previewBtn'),    previewPDF);
+  tap(gv('exitPreviewBtn'),exitPreview);
+}
+
+window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
 
 /* ══════════════════════════════════════════════
    行番号更新
