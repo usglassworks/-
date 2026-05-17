@@ -437,6 +437,8 @@ tfoot td.l{text-align:left}
 
 </div><!-- /.app -->
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 'use strict';
 
@@ -1036,16 +1038,83 @@ function exitPreview(){
   document.body.classList.remove('preview-mode');
 }
 
-function printPDF(){
+async function printPDF(){
+  /* ライブラリ未ロード時のフォールバック */
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    alert('PDFライブラリが読み込めていません。インターネット接続を確認してページを再読み込みしてください。');
+    return;
+  }
+
+  var wasPreview = document.body.classList.contains('preview-mode');
   try {
     calc();
-    if(document.activeElement && document.activeElement.blur){
-      document.activeElement.blur();
+
+    /* 横表レイアウトを強制（既存CSSを利用） */
+    document.body.classList.add('preview-mode');
+
+    /* レイアウト安定待ち */
+    await new Promise(function(r){ setTimeout(r, 350); });
+
+    var target = document.querySelector('.tbl-section');
+    if(!target){ alert('PDF出力対象が見つかりません'); return; }
+
+    var canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth + 40
+    });
+
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    var PW = 297, PH = 210, M = 6;
+    var imgW  = PW - M * 2;
+    var ratio = imgW / canvas.width;
+    var imgH  = canvas.height * ratio;
+    var sliceH = Math.floor((PH - M * 2) / ratio); /* キャンバスの1ページ分高さ(px) */
+
+    var srcY = 0;
+    var first = true;
+    while(srcY < canvas.height){
+      if(!first) pdf.addPage();
+      first = false;
+
+      var h = Math.min(sliceH, canvas.height - srcY);
+      var pageCanvas = document.createElement('canvas');
+      pageCanvas.width  = canvas.width;
+      pageCanvas.height = h;
+      var ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, srcY, canvas.width, h, 0, 0, canvas.width, h);
+
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92),
+                   'JPEG', M, M, imgW, h * ratio);
+      srcY += h;
     }
-    setTimeout(function(){ window.print(); }, 300);
+
+    var pname = (gv('pname') || {value:''}).value || 'glass-quote';
+    var filename = pname.replace(/[\\/:*?"<>|]/g, '_') + '.pdf';
+
+    /* iOS判定：別タブで開く */
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS){
+      var blob = pdf.output('blob');
+      var url  = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } else {
+      pdf.save(filename);
+    }
+
   } catch(e){
-    console.error('PDF出力エラー:', e);
-    alert('PDF出力でエラーが発生しました。ブラウザの印刷機能からPDF保存してください。');
+    console.error('PDF生成エラー:', e);
+    alert('PDF生成でエラーが発生しました: ' + e.message);
+  } finally {
+    if(!wasPreview) document.body.classList.remove('preview-mode');
   }
 }
 
