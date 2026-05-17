@@ -237,6 +237,19 @@ tfoot td.l{text-align:left}
 .btn-master-reset{background:#fff;color:#c62828;border:2px solid #c62828;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;touch-action:manipulation}
 .btn-master-reset:active{background:#fef3f3}
 .master-saved-msg{font-size:13px;color:#2e7d32;font-weight:700;display:none}
+
+/* 案件保存モーダル */
+.project-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200000;padding:20px;overflow:auto}
+.project-modal-inner{background:#fff;border-radius:12px;max-width:700px;margin:40px auto;padding:16px;max-height:80vh;overflow:auto}
+.project-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.project-modal-head strong{font-size:16px;color:#0d2b50}
+.project-modal-head button{background:#888;color:#fff;border:none;padding:10px 18px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+.project-item{border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.project-item-title{font-weight:800;color:#0d2b50;font-size:15px}
+.project-item-date{font-size:12px;color:#666;margin-top:2px}
+.project-actions{display:flex;gap:6px;flex-shrink:0}
+.project-actions .btn-load{background:#1a5f8c;color:#fff;border:none;padding:10px 16px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+.project-actions .btn-del-p{background:#c62828;color:#fff;border:none;padding:10px 14px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
 </style>
 </head>
 <body>
@@ -432,11 +445,24 @@ tfoot td.l{text-align:left}
   <!-- アクションバー -->
   <div class="action-bar no-print">
     <button type="button" id="previewBtn" class="btn-preview">PDF確認プレビュー</button>
+    <button type="button" id="saveProjectBtn" class="btn-preview" onclick="saveProjectData()">案件を保存</button>
+    <button type="button" id="loadProjectBtn" class="btn-preview" onclick="showSavedProjects()">案件を呼び出し</button>
     <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
     <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
 
 </div><!-- /.app -->
+
+<!-- 案件保存モーダル -->
+<div id="projectModal" class="project-modal no-print" style="display:none">
+  <div class="project-modal-inner">
+    <div class="project-modal-head">
+      <strong>保存済み案件</strong>
+      <button type="button" onclick="hideSavedProjects()">閉じる</button>
+    </div>
+    <div id="projectList"></div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1175,6 +1201,251 @@ function saveQuoteHTML(){
   }
 }
 
+/* ══════════════════════════════════════════════
+   案件保存・呼び出し
+══════════════════════════════════════════════ */
+function collectSettingsData(){
+  return {
+    miscMode:  globalRadio('miscMode') || 'auto',
+    miscManual:(gv('misc-manual') || {value:''}).value,
+    discName:  (gv('disc-name')   || {value:''}).value,
+    discAmt:   (gv('disc-amt')    || {value:''}).value,
+    mGlass:    (gv('m-glass')     || {value:''}).value,
+    mConst:    (gv('m-const')     || {value:''}).value,
+    mCaulk:    (gv('m-caulk')     || {value:''}).value,
+    mRemov:    (gv('m-remov')     || {value:''}).value,
+    mDisp:     (gv('m-disp')      || {value:''}).value
+  };
+}
+
+function collectQuoteData(){
+  return {
+    qTitle:    (gv('q-title')    || {value:''}).value,
+    qAddr:     (gv('q-addr')     || {value:''}).value,
+    qCase:     (gv('q-case')     || {value:''}).value,
+    qDate:     (gv('q-date')     || {value:''}).value,
+    qNum:      (gv('q-num')      || {value:''}).value,
+    qNotes:    (gv('q-notes')    || {value:''}).value,
+    netMode:   globalRadio('netMode') || 'auto',
+    netManual: (gv('net-manual') || {value:''}).value,
+    netTax:    globalRadio('netTax') || 'excl',
+    showNet:   gv('show-net') ? gv('show-net').checked : true,
+    qaMode:    globalRadio('qaMode') || 'detail',
+    qaNetMult: (gv('qa-net-mult') || {value:''}).value,
+    qaManual:  (gv('qa-manual')   || {value:''}).value,
+    qaTax:     globalRadio('qaTax') || 'excl',
+    showQa:    gv('show-qa') ? gv('show-qa').checked : true
+  };
+}
+
+function collectRowsData(){
+  var rows = [];
+  document.querySelectorAll('.row-card').forEach(function(card){
+    var id = card.dataset.rid;
+    rows.push({
+      fixtureNo:  (card.querySelector('.fixture-no')   || {value:''}).value,
+      w:          (card.querySelector('.iw')           || {value:''}).value,
+      h:          (card.querySelector('.ih')           || {value:''}).value,
+      q:          (card.querySelector('.iq')           || {value:''}).value,
+      g:          (card.querySelector('.ig')           || {value:'FL5'}).value,
+      priceMode:  radio(card, 'pm' + id) || 'sqm',
+      customName: (card.querySelector('.custom-name')  || {value:''}).value,
+      customSqm:  (card.querySelector('.custom-sqm')   || {value:''}).value,
+      customMat:  (card.querySelector('.custom-mat')   || {value:''}).value,
+      customSell: (card.querySelector('.custom-sell')  || {value:''}).value,
+      customMatC: (card.querySelector('.custom-matc')  || {value:''}).value,
+      sellMult:   (card.querySelector('.sell-mult')    || {value:''}).value,
+      constRate:  (card.querySelector('.const-rate')   || {value:''}).value,
+      fix:        radio(card, 'fix' + id) || 'caulking',
+      rem:        radio(card, 'rem' + id) || '0',
+      fire:       radio(card, 'fir' + id) || '0',
+      ckRemoval:  radio(card, 'ckr' + id) || '0',
+      disposal:   radio(card, 'dsp' + id) || '0',
+      caulkRate:  (card.querySelector('.caulk-rate')   || {value:''}).value,
+      removalRate:(card.querySelector('.removal-rate') || {value:''}).value,
+      addName:    (card.querySelector('.add-name')     || {value:''}).value,
+      addAmt:     (card.querySelector('.add-amount')   || {value:''}).value,
+      addInCost:  card.querySelector('.add-in-cost')  ? card.querySelector('.add-in-cost').checked  : false,
+      addInSales: card.querySelector('.add-in-sales') ? card.querySelector('.add-in-sales').checked : false,
+      addInCust:  card.querySelector('.add-in-cust')  ? card.querySelector('.add-in-cust').checked  : false
+    });
+  });
+  return rows;
+}
+
+function saveProjectData(){
+  try {
+    calc();
+    var projectName = (gv('pname') || {value:''}).value || '無題案件';
+    var data = {
+      pname:    projectName,
+      settings: collectSettingsData(),
+      quote:    collectQuoteData(),
+      rows:     collectRowsData()
+    };
+
+    var projects = [];
+    try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+
+    var now = new Date();
+    var id = String(now.getTime());
+    var savedAt = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2,'0') + '-' +
+      String(now.getDate()).padStart(2,'0') + ' ' +
+      String(now.getHours()).padStart(2,'0') + ':' +
+      String(now.getMinutes()).padStart(2,'0');
+
+    projects.unshift({ id:id, name:projectName, savedAt:savedAt, data:data });
+    localStorage.setItem('usglass_projects', JSON.stringify(projects));
+    alert('案件を保存しました：' + projectName);
+  } catch(e){
+    console.error('案件保存エラー:', e);
+    alert('案件保存でエラーが発生しました：' + (e.message || e));
+  }
+}
+
+function showSavedProjects(){
+  var modal = gv('projectModal');
+  var list  = gv('projectList');
+  if(!modal || !list) return;
+
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+
+  if(projects.length === 0){
+    list.innerHTML = '<p style="color:#888;padding:12px">保存済み案件はありません。</p>';
+  } else {
+    var h = '';
+    projects.forEach(function(p){
+      h += '<div class="project-item">';
+      h += '<div>';
+      h += '<div class="project-item-title">' + escH(p.name || '無題案件') + '</div>';
+      h += '<div class="project-item-date">' + escH(p.savedAt || '') + '</div>';
+      h += '</div>';
+      h += '<div class="project-actions">';
+      h += '<button type="button" class="btn-load" onclick="loadProjectData(\'' + escH(p.id) + '\')">呼び出し</button>';
+      h += '<button type="button" class="btn-del-p" onclick="deleteProjectData(\'' + escH(p.id) + '\')">削除</button>';
+      h += '</div>';
+      h += '</div>';
+    });
+    list.innerHTML = h;
+  }
+  modal.style.display = 'block';
+}
+
+function hideSavedProjects(){
+  var modal = gv('projectModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function deleteProjectData(id){
+  if(!confirm('この保存済み案件を削除しますか？')) return;
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+  projects = projects.filter(function(p){ return p.id !== id; });
+  localStorage.setItem('usglass_projects', JSON.stringify(projects));
+  showSavedProjects();
+}
+
+function loadProjectData(id){
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+  var project = projects.find(function(p){ return p.id === id; });
+  if(!project){ alert('案件が見つかりません'); return; }
+  if(!confirm('この案件を呼び出しますか？現在の入力内容は上書きされます。')) return;
+  applyProjectData(project.data);
+  hideSavedProjects();
+  alert('案件を呼び出しました：' + project.name);
+}
+
+function setRadio(name, value){
+  var el = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+  if(el) el.checked = true;
+}
+
+function applyRowData(card, row){
+  if(!card || !row) return;
+  var id = card.dataset.rid;
+  if(card.querySelector('.fixture-no'))  card.querySelector('.fixture-no').value  = row.fixtureNo  || '';
+  if(card.querySelector('.iw'))          card.querySelector('.iw').value           = row.w          || '';
+  if(card.querySelector('.ih'))          card.querySelector('.ih').value           = row.h          || '';
+  if(card.querySelector('.iq'))          card.querySelector('.iq').value           = row.q          || 1;
+  if(card.querySelector('.ig'))          card.querySelector('.ig').value           = row.g          || 'FL5';
+  if(card.querySelector('.custom-name')) card.querySelector('.custom-name').value  = row.customName || '';
+  if(card.querySelector('.custom-sqm'))  card.querySelector('.custom-sqm').value   = row.customSqm  || 0;
+  if(card.querySelector('.custom-mat'))  card.querySelector('.custom-mat').value   = row.customMat  || 0;
+  if(card.querySelector('.custom-sell')) card.querySelector('.custom-sell').value  = row.customSell || 0;
+  if(card.querySelector('.custom-matc')) card.querySelector('.custom-matc').value  = row.customMatC || 0;
+  if(card.querySelector('.sell-mult'))   card.querySelector('.sell-mult').value    = row.sellMult   || 2.0;
+  if(card.querySelector('.const-rate'))  card.querySelector('.const-rate').value   = row.constRate  || '';
+  if(card.querySelector('.caulk-rate'))  card.querySelector('.caulk-rate').value   = row.caulkRate  || '';
+  if(card.querySelector('.removal-rate'))card.querySelector('.removal-rate').value = row.removalRate|| '';
+  if(card.querySelector('.add-name'))    card.querySelector('.add-name').value     = row.addName    || '';
+  if(card.querySelector('.add-amount'))  card.querySelector('.add-amount').value   = row.addAmt     || 0;
+  if(card.querySelector('.add-in-cost'))  card.querySelector('.add-in-cost').checked  = !!row.addInCost;
+  if(card.querySelector('.add-in-sales')) card.querySelector('.add-in-sales').checked = !!row.addInSales;
+  if(card.querySelector('.add-in-cust'))  card.querySelector('.add-in-cust').checked  = !!row.addInCust;
+  setRadio('pm'  + id, row.priceMode  || 'sqm');
+  setRadio('fix' + id, row.fix        || 'caulking');
+  setRadio('rem' + id, row.rem        || '0');
+  setRadio('fir' + id, row.fire       || '0');
+  setRadio('ckr' + id, row.ckRemoval  || '0');
+  setRadio('dsp' + id, row.disposal   || '0');
+  updateRow(card);
+}
+
+function applyProjectData(data){
+  if(!data) return;
+
+  if(gv('pname')) gv('pname').value = data.pname || '';
+
+  var s = data.settings || {};
+  setRadio('miscMode', s.miscMode || 'auto');
+  if(gv('misc-manual')) gv('misc-manual').value = s.miscManual || 0;
+  if(gv('disc-name'))   gv('disc-name').value   = s.discName   || '';
+  if(gv('disc-amt'))    gv('disc-amt').value     = s.discAmt    || 0;
+  if(gv('m-glass'))     gv('m-glass').value      = s.mGlass     || 1.25;
+  if(gv('m-const'))     gv('m-const').value      = s.mConst     || 1.75;
+  if(gv('m-caulk'))     gv('m-caulk').value      = s.mCaulk     || 1.48;
+  if(gv('m-remov'))     gv('m-remov').value      = s.mRemov     || 1.48;
+  if(gv('m-disp'))      gv('m-disp').value       = s.mDisp      || 1.00;
+
+  var q = data.quote || {};
+  if(gv('q-title'))    gv('q-title').value    = q.qTitle    || 'お見積書';
+  if(gv('q-addr'))     gv('q-addr').value     = q.qAddr     || '';
+  if(gv('q-case'))     gv('q-case').value     = q.qCase     || '';
+  if(gv('q-date'))     gv('q-date').value     = q.qDate     || '';
+  if(gv('q-num'))      gv('q-num').value      = q.qNum      || '';
+  if(gv('q-notes'))    gv('q-notes').value    = q.qNotes    || '';
+  setRadio('netMode', q.netMode || 'auto');
+  if(gv('net-manual'))  gv('net-manual').value  = q.netManual  || 0;
+  setRadio('netTax', q.netTax || 'excl');
+  if(gv('show-net'))    gv('show-net').checked   = q.showNet !== false;
+  setRadio('qaMode', q.qaMode || 'detail');
+  if(gv('qa-net-mult')) gv('qa-net-mult').value  = q.qaNetMult  || 1.25;
+  if(gv('qa-manual'))   gv('qa-manual').value    = q.qaManual   || 0;
+  setRadio('qaTax', q.qaTax || 'excl');
+  if(gv('show-qa'))     gv('show-qa').checked    = q.showQa !== false;
+
+  var box = gv('row-cards');
+  if(box) box.innerHTML = '';
+  rid = 0;
+
+  var rowsData = data.rows || [];
+  if(rowsData.length === 0){
+    addRow();
+  } else {
+    rowsData.forEach(function(row){
+      addRow();
+      var cards = document.querySelectorAll('.row-card');
+      applyRowData(cards[cards.length - 1], row);
+    });
+  }
+
+  updateSettings();
+  calc();
+}
+
 function bindButtons(){
   function safe(id, fn){
     var btn = gv(id);
@@ -1189,6 +1460,8 @@ function bindButtons(){
   safe('masterSaveBtn',  saveMasterPrices);
   safe('masterResetBtn', resetMasterPrices);
   safe('saveQuoteBtn',   saveQuoteHTML);
+  safe('saveProjectBtn', saveProjectData);
+  safe('loadProjectBtn', showSavedProjects);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
