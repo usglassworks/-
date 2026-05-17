@@ -222,6 +222,21 @@ tfoot td.l{text-align:left}
   .print-company{font-size:9px;color:#0d2b50;font-weight:700;margin-bottom:2mm}
 }
 .print-summary{display:none}
+
+/* 単価マスターパネル */
+.master-sblock{grid-column:1/-1!important}
+.master-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:8px}
+.master-item{display:flex;flex-direction:column;gap:3px}
+.master-item label{font-size:11px;color:#444;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.master-item input{padding:6px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:14px;font-family:inherit;width:100%;min-height:40px;text-align:right;-webkit-appearance:none;appearance:none}
+.master-item input:focus{outline:none;border-color:#1a5f8c}
+.master-sec-label{font-size:11px;font-weight:800;color:#0d2b50;margin:10px 0 5px;border-bottom:1px solid #d0dde9;padding-bottom:3px;letter-spacing:.04em}
+.master-btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.btn-master-save{background:#0d2b50;color:#fff;border:none;padding:10px 22px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;touch-action:manipulation}
+.btn-master-save:active{background:#1a5f8c}
+.btn-master-reset{background:#fff;color:#c62828;border:2px solid #c62828;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;touch-action:manipulation}
+.btn-master-reset:active{background:#fef3f3}
+.master-saved-msg{font-size:13px;color:#2e7d32;font-weight:700;display:none}
 </style>
 </head>
 <body>
@@ -354,6 +369,31 @@ tfoot td.l{text-align:left}
         </div>
       </div>
 
+      <!-- 単価マスター編集（全幅） -->
+      <div class="sblock master-sblock" id="master-sblock">
+        <div class="sblock-title">単価マスター編集</div>
+
+        <div class="master-sec-label">材料単価 GP（円/m² × 1.10 × 面積）</div>
+        <div class="master-grid" id="mp-gp-grid"></div>
+
+        <div class="master-sec-label">施工単価 CR（円/m²）</div>
+        <div class="master-grid" id="mp-cr-grid"></div>
+
+        <div class="master-sec-label">その他単価</div>
+        <div class="master-grid">
+          <div class="master-item"><label>通常CK単価(円/m)</label><input type="number" id="mp-oth-ckNormal" min="0" step="10"></div>
+          <div class="master-item"><label>防火CK単価(円/m)</label><input type="number" id="mp-oth-ckFire" min="0" step="10"></div>
+          <div class="master-item"><label>CK剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
+          <div class="master-item"><label>廃棄代(円/枚)</label><input type="number" id="mp-oth-disposal" min="0" step="100"></div>
+        </div>
+
+        <div class="master-btn-row">
+          <button type="button" id="masterSaveBtn" class="btn-master-save">単価を保存</button>
+          <button type="button" id="masterResetBtn" class="btn-master-reset">初期単価に戻す</button>
+          <span class="master-saved-msg" id="master-saved-msg">✓ 保存しました</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -402,7 +442,7 @@ tfoot td.l{text-align:left}
 /* ══════════════════════════════════════════════
    定数
 ══════════════════════════════════════════════ */
-var GP = {
+var DEFAULT_GP = {
   'FL2':1560,'FL3':1840,'FL5':1710,'FL6':2130,'FL8':3500,'FL10':4800,
   'F6':4560,'Fw':5100,'pw':8100,
   'Yカガミ3':3530,'Yカガミ5':4940,'Yカガミ6':6000,
@@ -413,10 +453,16 @@ var GP = {
   '耐熱5':45000,'耐熱8':93000
 };
 
-var CR = {
+var DEFAULT_CR = {
   'FL5':1100,'FL6':1200,'FL8':1400,'FL10':2000,'FL12':3000,
   'F6':1200,'Fw':1300,'pw':1300
 };
+
+var DEFAULT_OTHER = {ckNormal:300, ckFire:700, ckRemoval:300, disposal:1000};
+
+var GP    = Object.assign({}, DEFAULT_GP);
+var CR    = Object.assign({}, DEFAULT_CR);
+var OTHER = Object.assign({}, DEFAULT_OTHER);
 
 var CUSTOM_TYPES = {'自由入力':1,'複層ガラス':1,'LOW-E複層':1,'特注品':1};
 var MIRRORS      = {'Yカガミ3':1,'Yカガミ5':1,'Yカガミ6':1};
@@ -573,17 +619,17 @@ function calcRow(d){
   var ckrRate = 0;
   if(d.fix === 'caulking'){
     caulkMeters = ((w + h) / 1000) * 4 * q;
-    var ckr = d.caulkRate > 0 ? d.caulkRate : (d.fire ? 700 : 300);
+    var ckr = d.caulkRate > 0 ? d.caulkRate : (d.fire ? OTHER.ckFire : OTHER.ckNormal);
     caulkingCost = Math.round(caulkMeters * ckr);
     /* 剥がし代：「あり」の場合のみ計算 */
     if(d.ckRemoval){
-      ckrRate = d.removalRate > 0 ? d.removalRate : 300;
+      ckrRate = d.removalRate > 0 ? d.removalRate : OTHER.ckRemoval;
       caulkingRemoval = Math.round(caulkMeters * ckrRate);
     }
   }
 
   /* 廃棄代：「あり」の場合のみ */
-  var disposalCost = d.disposal ? (q * 1000) : 0;
+  var disposalCost = d.disposal ? (q * OTHER.disposal) : 0;
 
   /* 追加費用 */
   var addAmt = d.addAmt || 0;
@@ -745,7 +791,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       var d = datas[i], c = calcs[i];
       var dim = (d.w && d.h) ? d.w + ' × ' + d.h : '—';
       var pname = (d.customName && isCustom(d.g)) ? d.customName : d.g;
-      var ckr_disp = d.caulkRate > 0 ? d.caulkRate : (d.fire ? 700 : 300);
+      var ckr_disp = d.caulkRate > 0 ? d.caulkRate : (d.fire ? OTHER.ckFire : OTHER.ckNormal);
       var up = isCustom(d.g) ? (d.priceMode === 'sqm' ? d.customSqm : '—') : (GP[d.g] || 0);
       var rowT = c.glassPrice + c.constructionBase + c.removalCost
                + c.caulkingCost + c.caulkingRemoval + c.disposalCost
@@ -1010,10 +1056,12 @@ function bindButtons(){
     btn.addEventListener('click',    function(e){ e.preventDefault(); e.stopPropagation(); fn(); }, false);
     btn.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); fn(); }, false);
   }
-  tap(gv('pdfBtn'),        printPDF);
-  tap(gv('previewPdfBtn'), printPDF);
-  tap(gv('previewBtn'),    previewPDF);
-  tap(gv('exitPreviewBtn'),exitPreview);
+  tap(gv('pdfBtn'),         printPDF);
+  tap(gv('previewPdfBtn'),  printPDF);
+  tap(gv('previewBtn'),     previewPDF);
+  tap(gv('exitPreviewBtn'), exitPreview);
+  tap(gv('masterSaveBtn'),  saveMasterPrices);
+  tap(gv('masterResetBtn'), resetMasterPrices);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
@@ -1251,6 +1299,92 @@ function delRow(id){
 }
 
 /* ══════════════════════════════════════════════
+   単価マスター
+══════════════════════════════════════════════ */
+var GP_KEYS = ['FL2','FL3','FL5','FL6','FL8','FL10','F6','Fw','pw',
+               'Yカガミ3','Yカガミ5','Yカガミ6',
+               '3+3透明','4+4透明','5+5透明','3+3乳半','4+4乳半',
+               'ラミブロック3+3透明','ラミブロック4+4透明',
+               'ラミブロック3+3乳半','ラミブロック4+4乳半',
+               '耐熱5','耐熱8'];
+var CR_KEYS = ['FL5','FL6','FL8','FL10','FL12','F6','Fw','pw'];
+
+function renderMasterPanel(){
+  var gpGrid = gv('mp-gp-grid');
+  var crGrid = gv('mp-cr-grid');
+  if(!gpGrid || !crGrid) return;
+
+  gpGrid.innerHTML = GP_KEYS.map(function(k){
+    return '<div class="master-item">' +
+      '<label title="' + k + '">' + k + '</label>' +
+      '<input type="number" id="mp-gp-' + k + '" min="0" step="10" value="' + (GP[k] || 0) + '">' +
+      '</div>';
+  }).join('');
+
+  crGrid.innerHTML = CR_KEYS.map(function(k){
+    return '<div class="master-item">' +
+      '<label title="' + k + '">' + k + '</label>' +
+      '<input type="number" id="mp-cr-' + k + '" min="0" step="10" value="' + (CR[k] || 0) + '">' +
+      '</div>';
+  }).join('');
+
+  var oth = ['ckNormal','ckFire','ckRemoval','disposal'];
+  oth.forEach(function(k){
+    var el = gv('mp-oth-' + k);
+    if(el) el.value = OTHER[k] || 0;
+  });
+}
+
+function loadMasterPrices(){
+  try {
+    var sGP  = localStorage.getItem('usglass_GP');
+    var sCR  = localStorage.getItem('usglass_CR');
+    var sOTH = localStorage.getItem('usglass_OTHER');
+    if(sGP)  GP    = JSON.parse(sGP);
+    if(sCR)  CR    = JSON.parse(sCR);
+    if(sOTH) OTHER = JSON.parse(sOTH);
+  } catch(e){}
+}
+
+function saveMasterPrices(){
+  GP_KEYS.forEach(function(k){
+    var el = gv('mp-gp-' + k);
+    if(el) GP[k] = parseFloat(el.value) || 0;
+  });
+  CR_KEYS.forEach(function(k){
+    var el = gv('mp-cr-' + k);
+    if(el) CR[k] = parseFloat(el.value) || 0;
+  });
+  ['ckNormal','ckFire','ckRemoval','disposal'].forEach(function(k){
+    var el = gv('mp-oth-' + k);
+    if(el) OTHER[k] = parseFloat(el.value) || 0;
+  });
+  try {
+    localStorage.setItem('usglass_GP',    JSON.stringify(GP));
+    localStorage.setItem('usglass_CR',    JSON.stringify(CR));
+    localStorage.setItem('usglass_OTHER', JSON.stringify(OTHER));
+  } catch(e){}
+
+  var msg = gv('master-saved-msg');
+  if(msg){ msg.style.display = 'inline'; setTimeout(function(){ msg.style.display = 'none'; }, 2000); }
+  calc();
+}
+
+function resetMasterPrices(){
+  if(!confirm('単価を初期値に戻します。よろしいですか？')) return;
+  GP    = Object.assign({}, DEFAULT_GP);
+  CR    = Object.assign({}, DEFAULT_CR);
+  OTHER = Object.assign({}, DEFAULT_OTHER);
+  try {
+    localStorage.removeItem('usglass_GP');
+    localStorage.removeItem('usglass_CR');
+    localStorage.removeItem('usglass_OTHER');
+  } catch(e){}
+  renderMasterPanel();
+  calc();
+}
+
+/* ══════════════════════════════════════════════
    設定パネルのラジオ変更検知
 ══════════════════════════════════════════════ */
 document.addEventListener('change', function(e){
@@ -1260,7 +1394,9 @@ document.addEventListener('change', function(e){
 /* ══════════════════════════════════════════════
    初期化
 ══════════════════════════════════════════════ */
+loadMasterPrices();
 addRow();
+renderMasterPanel();
 </script>
 </body>
 </html>
