@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ユーエス硝子 ガラス積算ツール</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo','Yu Gothic',sans-serif;background:#eef1f5;color:#222;font-size:15px}
+.app{max-width:1500px;margin:0 auto;padding:12px}
+
+/* タッチ改善 */
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+input,select,textarea{-webkit-tap-highlight-color:transparent}
+
+/* Header */
+.hdr{background:linear-gradient(135deg,#0d2b50,#1a5f8c);color:#fff;padding:18px 24px;border-radius:14px;margin-bottom:14px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.hdr h1{font-size:20px;font-weight:800}
+.hdr p{font-size:12px;opacity:.75;margin-top:4px}
+
+/* Top bar */
+.topbar{display:flex;gap:10px;align-items:center;background:#fff;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);flex-wrap:wrap}
+.tblabel{font-weight:700;font-size:13px;white-space:nowrap}
+#pname{flex:1;min-width:180px;padding:10px 14px;border:1.5px solid #ccc;border-radius:7px;font-family:inherit;font-size:16px;min-height:44px;-webkit-appearance:none;appearance:none}
+#pname:focus{outline:none;border-color:#1a5f8c}
+.toggle-wrap{display:flex;border:2px solid #1a5f8c;border-radius:8px;overflow:hidden}
+.tbtn{padding:10px 20px;border:none;font-size:14px;font-weight:700;font-family:inherit;background:#fff;color:#1a5f8c;min-height:44px}
+.tbtn:first-child{border-right:1px solid #1a5f8c}
+.tbtn.on{background:#1a5f8c;color:#fff}
+
+/* Settings panel */
+.settings-panel{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;border-left:5px solid #0d2b50;overflow:hidden}
+.settings-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;font-weight:800;font-size:14px;color:#0d2b50;background:none;border:none;font-family:inherit;text-align:left;min-height:48px}
+.settings-hdr-arrow{font-size:13px;transition:transform .25s;display:inline-block;transform:rotate(180deg)}
+.settings-hdr-arrow.open{transform:rotate(0deg)}
+.settings-inner{padding:16px 18px 18px;border-top:1px solid #eee;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.settings-inner{grid-template-columns:1fr}}
+.sblock{background:#f8fafc;border-radius:8px;padding:14px;border:1px solid #e5ecf4}
+.sblock-title{font-weight:800;font-size:12px;color:#0d2b50;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase}
+.srow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.srow:last-child{margin-bottom:0}
+.srow>label{font-size:13px;color:#444;display:flex;align-items:center;gap:6px;min-height:36px}
+.srow input[type=number],.srow input[type=text]{padding:8px 12px;border:1.5px solid #ddd;border-radius:6px;font-size:16px;font-family:inherit;width:110px;min-height:44px;-webkit-appearance:none;appearance:none}
+.srow input[type=number]:focus,.srow input[type=text]:focus{outline:none;border-color:#1a5f8c}
+.srow input.wide{width:200px}
+.srow input[type=radio]{accent-color:#1a5f8c;width:20px;height:20px;flex-shrink:0}
+.srow input[type=checkbox]{accent-color:#1a5f8c;width:20px;height:20px;flex-shrink:0}
+.mult-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:4px}
+@media(max-width:600px){.mult-grid{grid-template-columns:repeat(3,1fr)}}
+.mult-item{display:flex;flex-direction:column;gap:4px;align-items:center}
+.mult-item label{font-size:11px;color:#555;text-align:center}
+.mult-item input{width:72px;text-align:center;padding:8px 4px;border:1.5px solid #ddd;border-radius:6px;font-size:15px;font-family:inherit;min-height:44px;-webkit-appearance:none;appearance:none}
+
+/* Row cards */
+.row-cards{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+.row-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:5px solid #1a5f8c}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.card-ttl{font-weight:800;font-size:15px;color:#0d2b50}
+.btn-del{background:#e53935;color:#fff;border:none;padding:10px 20px;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;min-height:44px}
+.card-sections{display:flex;flex-direction:column;gap:12px}
+.csec-title{font-size:11px;font-weight:700;color:#1a5f8c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e0ecf7}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.fields-wide{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fglabel{font-size:11px;font-weight:700;color:#555;letter-spacing:.04em}
+.fg input[type=number],.fg input[type=text]{padding:10px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:16px;font-family:inherit;width:100%;min-height:44px;-webkit-appearance:none;appearance:none}
+.fg input[type=number]:focus,.fg input[type=text]:focus{outline:none;border-color:#1a5f8c}
+.fg select{padding:10px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:16px;font-family:inherit;width:100%;min-height:44px;background:#fff}
+.fg select:focus{outline:none;border-color:#1a5f8c}
+.rrow{display:flex;gap:4px;flex-wrap:wrap;padding-top:3px}
+.rrow label{display:flex;align-items:center;gap:7px;font-size:14px;color:#333;min-height:44px;padding:4px 10px;border-radius:6px}
+.rrow label:active{background:#eef5ff}
+.rrow input[type=radio]{width:20px;height:20px;accent-color:#1a5f8c;flex-shrink:0}
+.rrow input[type=checkbox]{width:20px;height:20px;accent-color:#1a5f8c;flex-shrink:0}
+.custom-fields{background:#f0f7ff;border-radius:8px;padding:12px;border:1px dashed #1a5f8c;margin-top:4px}
+.caulk-fields{background:#fff9f0;border-radius:8px;padding:12px;border:1px dashed #c08000;margin-top:8px}
+.add-fields{background:#f9f9f9;border-radius:8px;padding:12px;border:1px solid #e0e0e0;margin-top:4px}
+
+/* Add button */
+.btn-add{display:block;width:100%;padding:16px;background:#e8f0f9;border:2px dashed #1a5f8c;border-radius:10px;color:#1a5f8c;font-size:16px;font-weight:700;font-family:inherit;text-align:center;margin-bottom:20px;min-height:56px}
+.btn-add:active{background:#d0e5f7}
+
+/* Table section */
+.tbl-section{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);padding:20px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-title{font-size:15px;font-weight:800;color:#0d2b50;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+thead th{background:#0d2b50;color:#fff;padding:8px 6px;text-align:center;white-space:nowrap;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+tbody td{padding:7px 6px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}
+tbody td.c{text-align:center}
+tbody td.l{text-align:left}
+tbody tr:nth-child(even){background:#f7f9fc}
+tfoot td{padding:8px 6px;text-align:right;font-weight:700;white-space:nowrap}
+tfoot td.l{text-align:left}
+.tr-sub td{background:#ecf3fb;border-top:2px solid #1a5f8c}
+.tr-misc td{background:#fff8e1}
+.tr-disc td{background:#fef3f3}
+.tr-grand td{background:#0d2b50;color:#fff;font-size:13px;border-top:2px solid #1a5f8c;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.tr-net td{background:#e8f5e9}
+.tr-quote td{background:#e3f2fd}
+
+/* お見積書金額（元請け用・大表示） */
+.customer-quote-big{margin-top:22px;text-align:center;font-weight:900;page-break-inside:avoid;padding:18px 20px;border-top:3px solid #0d2b50;border-radius:0 0 8px 8px}
+.cqb-label{font-size:18px;color:#0d2b50;margin-bottom:8px;font-weight:700}
+.cqb-amount{font-size:38px;color:#0d2b50;font-weight:900;letter-spacing:.02em}
+.cqb-sub{font-size:13px;color:#555;margin-top:6px}
+.cqb-net{margin-top:10px;font-size:20px;color:#0d2b50;font-weight:900}
+/* 元請け用シンプル合計表示 */
+.customer-total-plain{display:block!important;margin-top:12px;text-align:left;font-weight:900;color:#111;page-break-inside:avoid;padding-top:10px;border-top:2px solid #0d2b50}
+.customer-total-plain .quote-line{font-size:17px;margin-bottom:4px}
+.customer-total-plain .net-line{font-size:16px}
+
+/* モバイル：テーブル→カード表示 */
+@media screen and (max-width:900px){
+  .tbl-section{padding:12px 10px}
+  table{display:block;min-width:0}
+  thead{display:none}
+  tbody{display:block}
+  tfoot{display:none}
+  tbody tr{display:block;border:1px solid #d4dce8;border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#fff}
+  tbody tr:nth-child(even){background:#f7f9fc}
+  tbody td{display:flex;justify-content:space-between;align-items:baseline;border:none;border-bottom:1px solid #f0f0f0;padding:5px 2px;white-space:normal;text-align:right}
+  tbody td:last-child{border-bottom:none}
+  tbody td::before{content:attr(data-label);font-weight:700;color:#0d2b50;font-size:11px;flex:0 0 auto;margin-right:10px;text-align:left;white-space:nowrap}
+  tbody td.td-detail{display:none}
+  tbody td.td-total{background:#ecf3fb;border-radius:0 0 8px 8px;margin:4px -12px -10px;padding:8px 14px;font-size:14px;font-weight:800;border-top:2px solid #1a5f8c}
+  .mobile-totals{display:block;margin-top:12px}
+  .mt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:7px;margin-bottom:5px;font-size:13px;font-weight:600}
+}
+.mobile-totals{display:none}
+
+/* Banners */
+.banner-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.total-banner{flex:1;min-width:200px;background:linear-gradient(135deg,#0d2b50,#1a5f8c);color:#fff;border-radius:12px;padding:16px 20px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.total-banner .lbl{font-size:12px;opacity:.85;margin-bottom:4px}
+.total-banner .amt{font-size:32px;font-weight:900}
+.profit-banner{flex:1;min-width:200px;background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;border-radius:12px;padding:16px 20px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.profit-banner .lbl{font-size:12px;opacity:.85;margin-bottom:4px}
+.profit-banner .amt{font-size:28px;font-weight:900}
+.profit-banner .sub{font-size:13px;opacity:.9;margin-top:4px}
+.quote-box{background:#fff;border:2px solid #0d2b50;border-radius:12px;padding:16px 20px;min-width:280px}
+.quote-box-title{font-size:12px;font-weight:800;color:#0d2b50;margin-bottom:10px}
+.quote-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eee;font-size:13px}
+.quote-row:last-child{border-bottom:none;font-weight:800;font-size:14px;color:#0d2b50}
+.quote-row .ql{color:#555}
+.quote-row .qv{font-weight:700;color:#0d2b50}
+
+/* Action bar */
+.action-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;position:relative;z-index:99999;pointer-events:auto!important}
+.btn-preview{background:#1a5f8c;color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:100000;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn-preview:active{background:#0d4f7c}
+.btn-pdf{background:#c62828;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:100000;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn-pdf:active{background:#b71c1c}
+
+/* プレビューバー */
+#preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:100001;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:auto!important}
+#preview-bar span{font-weight:700;font-size:14px}
+#preview-bar .btn-exit{background:#fff;color:#0d2b50;border:none;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative;z-index:100002}
+
+/* プレビューモード */
+.preview-mode #preview-bar{display:flex!important;pointer-events:auto!important;z-index:100001!important}
+.preview-mode #preview-bar button{pointer-events:auto!important;z-index:100002!important}
+.preview-mode .app{padding-top:70px}
+.preview-mode .hdr,
+.preview-mode .topbar,
+.preview-mode .settings-panel,
+.preview-mode .row-cards,
+.preview-mode .btn-add,
+.preview-mode .banner-row,
+.preview-mode #quote-summary-box,
+.preview-mode .action-bar{display:none!important}
+.preview-mode .tbl-section{box-shadow:none;border:1.5px solid #ccd;border-radius:8px;overflow:visible}
+/* プレビューモードでは画面幅に関わらず必ず横表表示 */
+.preview-mode table{display:table!important;width:100%!important;min-width:0!important;table-layout:fixed!important;font-size:9px!important}
+.preview-mode thead{display:table-header-group!important}
+.preview-mode tbody{display:table-row-group!important}
+.preview-mode tfoot{display:table-footer-group!important}
+.preview-mode tr{display:table-row!important;border:none!important;border-radius:0!important;padding:0!important;margin:0!important}
+.preview-mode th,.preview-mode td{display:table-cell!important;white-space:nowrap!important;padding:4px 3px!important;font-size:9px!important}
+.preview-mode tbody td::before{display:none!important;content:none!important}
+.preview-mode tbody td.td-detail{display:table-cell!important}
+.preview-mode tbody td.td-total{display:table-cell!important;background:transparent!important;border-radius:0!important;margin:0!important;padding:4px 3px!important;font-size:9px!important;border-top:none!important}
+.preview-mode .mobile-totals{display:none!important}
+
+/* 印刷 */
+@media print{
+  @page{size:A4 landscape;margin:7mm 6mm 5mm 6mm}
+  body{background:#fff;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo',sans-serif}
+  .no-print{display:none!important}
+  .mobile-totals{display:none!important}
+  #preview-bar{display:none!important}
+  .app{padding:0;max-width:100%}
+  .tbl-section{box-shadow:none;padding:0;border-radius:0;overflow:visible!important;margin-bottom:4mm;border:none}
+  .tbl-title{font-size:11px;margin-bottom:4px}
+  table{display:table!important;min-width:0!important;width:100%!important;table-layout:fixed!important;font-size:8.5px!important}
+  thead{display:table-header-group!important}
+  tbody{display:table-row-group!important}
+  tfoot{display:table-footer-group!important}
+  tr{display:table-row!important;border:none!important;border-radius:0!important;padding:0!important;margin:0!important;background:none!important}
+  tbody tr:nth-child(even){background:#f7f9fc!important}
+  th,td{display:table-cell!important;white-space:nowrap!important;padding:3px 2px!important;font-size:8.5px!important}
+  thead tr{visibility:visible!important}
+  tbody td::before{display:none!important;content:none!important}
+  tbody td.td-detail{display:table-cell!important}
+  tbody td.td-total{background:none!important;border-radius:0!important;margin:0!important;padding:3px 2px!important;font-size:8.5px!important;border-top:none!important}
+  tfoot tr{display:table-row!important;border-radius:0!important;padding:0!important}
+  tfoot td{display:table-cell!important;text-align:right!important;padding:3px 2px!important;white-space:nowrap!important;font-size:8.5px!important}
+  tfoot td.l{text-align:left!important}
+  thead th{padding:3px 2px;font-size:8.5px}
+  .tr-sub td{background:#ecf3fb!important;border-top:1px solid #1a5f8c!important}
+  .tr-misc td{background:#fff8e1!important}
+  .tr-disc td{background:#fef3f3!important}
+  .tr-grand td{background:#0d2b50!important;color:#fff!important;font-size:9px!important}
+  .tr-net td{background:#e8f5e9!important}
+  .tr-quote td{background:#e3f2fd!important}
+  .customer-total-plain{display:block!important;margin-top:6mm!important;page-break-inside:avoid!important}
+  .customer-total-plain .quote-line{font-size:13px!important;font-weight:900!important}
+  .customer-total-plain .net-line{font-size:12px!important;font-weight:900!important}
+  .print-summary{display:block!important}
+  .print-summary-inner{border:1.5px solid #0d2b50;border-radius:6px;padding:6px 10px;margin-top:4mm}
+  .print-summary-row{display:flex!important;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee;font-size:9px}
+  .print-summary-row:last-child{border-bottom:none;font-weight:800;font-size:10px}
+  .print-company{font-size:9px;color:#0d2b50;font-weight:700;margin-bottom:2mm}
+}
+.print-summary{display:none}
+
+/* 単価マスターパネル */
+.master-sblock{grid-column:1/-1!important}
+.master-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:8px}
+.master-item{display:flex;flex-direction:column;gap:3px}
+.master-item label{font-size:11px;color:#444;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.master-item input{padding:6px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:14px;font-family:inherit;width:100%;min-height:40px;text-align:right;-webkit-appearance:none;appearance:none}
+.master-item input:focus{outline:none;border-color:#1a5f8c}
+.master-sec-label{font-size:11px;font-weight:800;color:#0d2b50;margin:10px 0 5px;border-bottom:1px solid #d0dde9;padding-bottom:3px;letter-spacing:.04em}
+.master-btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.btn-master-save{background:#0d2b50;color:#fff;border:none;padding:10px 22px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;touch-action:manipulation}
+.btn-master-save:active{background:#1a5f8c}
+.btn-master-reset{background:#fff;color:#c62828;border:2px solid #c62828;padding:10px 20px;border-radius:7px;font-size:14px;font-weight:800;font-family:inherit;min-height:44px;touch-action:manipulation}
+.btn-master-reset:active{background:#fef3f3}
+.master-saved-msg{font-size:13px;color:#2e7d32;font-weight:700;display:none}
+
+/* 単価未設定警告 */
+.master-warning{background:#fff3cd;border:1px solid #ffecb5;color:#7a4f00;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-weight:800;font-size:13px}
+
+/* 案件保存モーダル */
+.project-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200000;padding:20px;overflow:auto}
+.project-modal-inner{background:#fff;border-radius:12px;max-width:700px;margin:40px auto;padding:16px;max-height:80vh;overflow:auto}
+.project-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.project-modal-head strong{font-size:16px;color:#0d2b50}
+.project-modal-head button{background:#888;color:#fff;border:none;padding:10px 18px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+.project-item{border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.project-item-title{font-weight:800;color:#0d2b50;font-size:15px}
+.project-item-date{font-size:12px;color:#666;margin-top:2px}
+.project-actions{display:flex;gap:6px;flex-shrink:0}
+.project-actions .btn-load{background:#1a5f8c;color:#fff;border:none;padding:10px 16px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+.project-actions .btn-del-p{background:#c62828;color:#fff;border:none;padding:10px 14px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- プレビューバー（プレビューモード時に固定表示） -->
+<div id="preview-bar">
+  <span>プレビューモード — PDFに印刷される内容</span>
+  <div style="display:flex;gap:10px">
+    <button type="button" id="previewPdfBtn" class="btn-exit" onclick="printPDF()">PDF出力</button>
+    <button type="button" id="exitPreviewBtn" class="btn-exit">編集画面に戻る</button>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ヘッダー -->
+  <div class="hdr no-print">
+    <h1>ユーエス硝子　ガラス積算ツール</h1>
+    <p>ガラス修理・交換用</p>
+  </div>
+
+  <!-- 単価未設定警告 -->
+  <div id="masterWarning" class="master-warning no-print" style="display:none">
+    ⚠ 単価マスターが未設定です。設定・見積書オプション内の「単価マスター編集」から単価を入力し、「単価を保存」を押してください。
+  </div>
+
+  <!-- トップバー -->
+  <div class="topbar no-print">
+    <span class="tblabel">案件名</span>
+    <input type="text" id="pname" placeholder="案件名・現場名（任意）" oninput="calc()">
+    <span class="tblabel">表示モード</span>
+    <div class="toggle-wrap">
+      <button id="btn-int" class="tbtn on" type="button" onclick="setView('internal')">社内用</button>
+      <button id="btn-cus" class="tbtn"    type="button" onclick="setView('customer')">元請け提出用</button>
+    </div>
+  </div>
+
+  <!-- 設定パネル -->
+  <div class="settings-panel no-print" id="settings-panel">
+    <button type="button" class="settings-hdr" onclick="toggleSettings()">
+      <span>⚙ 設定・見積書オプション</span>
+      <span class="settings-hdr-arrow open" id="settings-arrow">▲</span>
+    </button>
+    <div class="settings-inner" id="settings-inner">
+
+      <div class="sblock">
+        <div class="sblock-title">案件設定</div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:70px">諸経費</label>
+          <label><input type="radio" name="miscMode" value="auto" checked onchange="calc()"> 自動</label>
+          <label><input type="radio" name="miscMode" value="manual" onchange="calc()"> 手入力</label>
+          <input type="number" id="misc-manual" value="0" min="0" step="100" placeholder="金額" style="width:100px" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:70px">値引き名</label>
+          <input type="text" id="disc-name" class="wide" placeholder="例：特別値引き" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:70px">値引き金額</label>
+          <input type="number" id="disc-amt" value="0" min="0" step="100" style="width:120px" oninput="calc()">
+          <label style="font-size:12px;color:#888">円（税抜）</label>
+        </div>
+        <div style="margin-top:10px">
+          <div class="sblock-title" style="margin-bottom:6px">元請け用倍率</div>
+          <div class="mult-grid">
+            <div class="mult-item"><label>ガラス</label><input type="number" id="m-glass" value="1.25" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>施工</label><input type="number" id="m-const" value="1.75" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>CK</label><input type="number" id="m-caulk" value="1.48" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>CK剥がし</label><input type="number" id="m-remov" value="1.48" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>廃棄</label><input type="number" id="m-disp" value="1.00" step="0.01" min="0" oninput="calc()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sblock">
+        <div class="sblock-title">見積書設定</div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">見積書タイトル</label>
+          <input type="text" id="q-title" class="wide" value="お見積書" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">宛名</label>
+          <input type="text" id="q-addr" class="wide" placeholder="例：〇〇株式会社 御中" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">案件名</label>
+          <input type="text" id="q-case" class="wide" placeholder="見積書用案件名" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">発行日</label>
+          <input type="text" id="q-date" class="wide" placeholder="例：2026年5月14日" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">見積番号</label>
+          <input type="text" id="q-num" style="width:130px" placeholder="例：Q-2026-001" oninput="calc()">
+        </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:90px">備考</label>
+          <input type="text" id="q-notes" class="wide" placeholder="備考・注意事項" oninput="calc()">
+        </div>
+        <div style="margin-top:10px;border-top:1px solid #dde;padding-top:10px">
+          <div class="srow">
+            <label style="font-weight:700;min-width:90px">NET金額</label>
+            <label><input type="radio" name="netMode" value="auto" checked onchange="calc()"> 自動</label>
+            <label><input type="radio" name="netMode" value="manual" onchange="calc()"> 手入力</label>
+            <input type="number" id="net-manual" value="0" min="0" step="100" style="width:110px" oninput="calc()">
+            <label><input type="radio" name="netTax" value="excl" checked onchange="calc()"> 税抜</label>
+            <label><input type="radio" name="netTax" value="incl" onchange="calc()"> 税込</label>
+          </div>
+          <div class="srow">
+            <label style="font-weight:700;min-width:90px">NET表示</label>
+            <label><input type="checkbox" id="show-net" checked onchange="calc()"> NET金額を表示する</label>
+          </div>
+          <div class="srow">
+            <label style="font-weight:700;min-width:90px">お見積書金額</label>
+            <label><input type="radio" name="qaMode" value="detail" checked onchange="calc()"> 明細別倍率</label>
+            <label><input type="radio" name="qaMode" value="net_mult" onchange="calc()"> NET倍率</label>
+            <label><input type="radio" name="qaMode" value="manual" onchange="calc()"> 手入力</label>
+          </div>
+          <div class="srow" id="qa-net-mult-row" style="display:none">
+            <label style="min-width:90px"></label>
+            <label style="font-size:12px">NET倍率</label>
+            <input type="number" id="qa-net-mult" value="1.25" step="0.01" min="0" style="width:90px" oninput="calc()">
+          </div>
+          <div class="srow" id="qa-manual-row" style="display:none">
+            <label style="min-width:90px"></label>
+            <input type="number" id="qa-manual" value="0" min="0" step="100" style="width:130px" oninput="calc()">
+            <label><input type="radio" name="qaTax" value="excl" checked onchange="calc()"> 税抜</label>
+            <label><input type="radio" name="qaTax" value="incl" onchange="calc()"> 税込</label>
+          </div>
+          <div class="srow">
+            <label style="font-weight:700;min-width:90px">金額表示</label>
+            <label><input type="checkbox" id="show-qa" checked onchange="calc()"> お見積書金額を表示する</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 単価マスター編集（全幅） -->
+      <div class="sblock master-sblock" id="master-sblock">
+        <div class="sblock-title">単価マスター編集</div>
+
+        <div class="master-sec-label">材料単価 GP（円/m² × 1.10 × 面積）</div>
+        <div class="master-grid" id="mp-gp-grid"></div>
+
+        <div class="master-sec-label">施工単価 CR（円/m²）</div>
+        <div class="master-grid" id="mp-cr-grid"></div>
+
+        <div class="master-sec-label">その他単価</div>
+        <div class="master-grid">
+          <div class="master-item"><label>通常CK単価(円/m)</label><input type="number" id="mp-oth-ckNormal" min="0" step="10"></div>
+          <div class="master-item"><label>防火CK単価(円/m)</label><input type="number" id="mp-oth-ckFire" min="0" step="10"></div>
+          <div class="master-item"><label>CK剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
+          <div class="master-item"><label>廃棄代(円/枚)</label><input type="number" id="mp-oth-disposal" min="0" step="100"></div>
+          <div class="master-item"><label>Yカガミ施工費(円/枚)</label><input type="number" id="mp-oth-mirrorLabor" min="0" step="100"></div>
+        </div>
+
+        <div class="master-btn-row">
+          <button type="button" id="masterSaveBtn" class="btn-master-save">単価を保存</button>
+          <button type="button" id="masterResetBtn" class="btn-master-reset">初期単価に戻す</button>
+          <button type="button" id="exportMasterBtn" class="btn-master-save" onclick="exportMasterPrices()">単価を書き出し</button>
+          <button type="button" id="importMasterBtn" class="btn-master-save" onclick="importMasterPrices()">単価を読み込み</button>
+          <span class="master-saved-msg" id="master-saved-msg">✓ 保存しました</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 行カード -->
+  <div id="row-cards" class="row-cards no-print"></div>
+  <button type="button" class="btn-add no-print" onclick="addRow()">＋ 明細を追加</button>
+
+  <!-- テーブルセクション -->
+  <div class="tbl-section">
+    <div id="tbl-title" class="tbl-title">【社内用】 積算明細</div>
+    <div id="tbl-body"></div>
+  </div>
+
+  <!-- 印刷用サマリー -->
+  <div class="print-summary" id="print-summary"></div>
+
+  <!-- バナー -->
+  <div class="banner-row no-print">
+    <div class="total-banner">
+      <div class="lbl" id="total-lbl">合計金額</div>
+      <div class="amt" id="total-amt">¥ 0</div>
+    </div>
+    <div id="profit-sec" class="profit-banner">
+      <div class="lbl">粗利</div>
+      <div class="amt" id="profit-amt">¥ 0</div>
+      <div class="sub" id="profit-rate">粗利率 0.0%</div>
+    </div>
+  </div>
+
+  <div id="quote-summary-box" class="quote-box no-print" style="margin-bottom:14px;max-width:500px">
+    <div class="quote-box-title">見積書サマリー</div>
+    <div id="quote-summary-inner"></div>
+  </div>
+
+  <!-- アクションバー -->
+  <div class="action-bar no-print">
+    <button type="button" id="previewBtn" class="btn-preview">PDF確認プレビュー</button>
+    <button type="button" id="saveProjectBtn" class="btn-preview" onclick="saveProjectData()">案件を保存</button>
+    <button type="button" id="loadProjectBtn" class="btn-preview" onclick="showSavedProjects()">案件を呼び出し</button>
+    <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
+    <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- 案件保存モーダル -->
+<div id="projectModal" class="project-modal no-print" style="display:none">
+  <div class="project-modal-inner">
+    <div class="project-modal-head">
+      <strong>保存済み案件</strong>
+      <button type="button" onclick="hideSavedProjects()">閉じる</button>
+    </div>
+    <div id="projectList"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════
+   定数
+══════════════════════════════════════════════ */
+var DEFAULT_GP = {
+  'FL2':0,'FL3':0,'FL5':0,'FL6':0,'FL8':0,'FL10':0,
+  'F6':0,'Fw':0,'pw':0,
+  'Yカガミ3':0,'Yカガミ5':0,'Yカガミ6':0,
+  '3+3透明':0,'4+4透明':0,'5+5透明':0,
+  '3+3乳半':0,'4+4乳半':0,
+  'ラミブロック3+3透明':0,'ラミブロック4+4透明':0,
+  'ラミブロック3+3乳半':0,'ラミブロック4+4乳半':0,
+  '耐熱5':0,'耐熱8':0
+};
+
+var DEFAULT_CR = {
+  'FL5':0,'FL6':0,'FL8':0,'FL10':0,'FL12':0,
+  'F6':0,'Fw':0,'pw':0
+};
+
+var DEFAULT_OTHER = {ckNormal:0, ckFire:0, ckRemoval:0, disposal:0, mirrorLabor:0};
+
+var GP    = Object.assign({}, DEFAULT_GP);
+var CR    = Object.assign({}, DEFAULT_CR);
+var OTHER = Object.assign({}, DEFAULT_OTHER);
+
+var CUSTOM_TYPES = {'自由入力':1,'複層ガラス':1,'LOW-E複層':1,'特注品':1};
+var MIRRORS      = {'Yカガミ3':1,'Yカガミ5':1,'Yカガミ6':1};
+
+var viewMode = 'internal';
+var rid = 0;
+
+/* ══════════════════════════════════════════════
+   ヘルパー
+══════════════════════════════════════════════ */
+function fmt(n){ return Math.round(n).toLocaleString('ja-JP'); }
+function fmtA(n){ return (+n).toFixed(3); }
+function gv(id){ return document.getElementById(id); }
+function getRate(t){ return CR[t] !== undefined ? CR[t] : 1200; }
+function isCustom(t){ return !!CUSTOM_TYPES[t]; }
+function isMirror(t){ return !!MIRRORS[t]; }
+
+function radio(scope, name){
+  var el = scope.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : '';
+}
+
+function globalRadio(name){
+  var el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : '';
+}
+
+function escH(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ══════════════════════════════════════════════
+   設定読み取り
+══════════════════════════════════════════════ */
+function readSettings(){
+  var miscMode   = globalRadio('miscMode') || 'auto';
+  var miscManual = parseFloat((gv('misc-manual')||{value:0}).value) || 0;
+  var discName   = (gv('disc-name')||{value:''}).value || '';
+  var discAmt    = parseFloat((gv('disc-amt')||{value:0}).value) || 0;
+  var multG  = parseFloat((gv('m-glass')||{value:1.25}).value) || 1.25;
+  var multC  = parseFloat((gv('m-const')||{value:1.75}).value) || 1.75;
+  var multK  = parseFloat((gv('m-caulk')||{value:1.48}).value) || 1.48;
+  var multKR = parseFloat((gv('m-remov')||{value:1.48}).value) || 1.48;
+  var multD  = parseFloat((gv('m-disp') ||{value:1.00}).value) || 1.00;
+  return {miscMode:miscMode, miscManual:miscManual,
+          discName:discName, discAmt:discAmt,
+          multG:multG, multC:multC, multK:multK, multKR:multKR, multD:multD};
+}
+
+function readQuote(){
+  var title      = (gv('q-title') ||{value:'お見積書'}).value || 'お見積書';
+  var addressee  = (gv('q-addr')  ||{value:''}).value || '';
+  var caseName   = (gv('q-case')  ||{value:''}).value || '';
+  var date       = (gv('q-date')  ||{value:''}).value || '';
+  var number     = (gv('q-num')   ||{value:''}).value || '';
+  var notes      = (gv('q-notes') ||{value:''}).value || '';
+  var showNET    = gv('show-net') ? gv('show-net').checked : true;
+  var showQA     = gv('show-qa')  ? gv('show-qa').checked  : true;
+  var netMode    = globalRadio('netMode') || 'auto';
+  var netManual  = parseFloat((gv('net-manual')||{value:0}).value) || 0;
+  var netTax     = globalRadio('netTax') || 'excl';
+  var qaMode     = globalRadio('qaMode') || 'detail';
+  var qaNM       = parseFloat((gv('qa-net-mult')||{value:1.25}).value) || 1.25;
+  var qaManual   = parseFloat((gv('qa-manual')  ||{value:0}).value) || 0;
+  var qaTax      = globalRadio('qaTax') || 'excl';
+  return {title:title, addressee:addressee, caseName:caseName, date:date,
+          number:number, notes:notes, showNET:showNET, showQA:showQA,
+          netMode:netMode, netManual:netManual, netTax:netTax,
+          qaMode:qaMode, netMult:qaNM, qaManual:qaManual, qaTax:qaTax};
+}
+
+/* ══════════════════════════════════════════════
+   行データ読み取り
+══════════════════════════════════════════════ */
+function getRowData(el){
+  var id = el.dataset.rid;
+  var glassType = el.querySelector('.ig').value;
+  var priceMode = radio(el, 'pm' + id) || 'sqm';
+  return {
+    w:           parseFloat(el.querySelector('.iw').value) || 0,
+    h:           parseFloat(el.querySelector('.ih').value) || 0,
+    q:           parseInt(  el.querySelector('.iq').value) || 0,
+    g:           glassType,
+    customName:  (el.querySelector('.custom-name') ||{value:''}).value || '',
+    priceMode:   priceMode,
+    customSqm:   parseFloat((el.querySelector('.custom-sqm')  ||{value:0}).value) || 0,
+    customMat:   parseFloat((el.querySelector('.custom-mat')  ||{value:0}).value) || 0,
+    customSell:  parseFloat((el.querySelector('.custom-sell') ||{value:0}).value) || 0,
+    customMatC:  parseFloat((el.querySelector('.custom-matc') ||{value:0}).value) || 0,
+    sellMult:    parseFloat((el.querySelector('.sell-mult')   ||{value:2.0}).value) || 2.0,
+    constRate:   parseFloat((el.querySelector('.const-rate')  ||{value:''}).value) || 0,
+    fix:         radio(el, 'fix' + id) || 'caulking',
+    rem:         radio(el, 'rem' + id) === '1',
+    fire:        radio(el, 'fir' + id) === '1',
+    ckRemoval:   radio(el, 'ckr' + id) === '1',
+    disposal:    radio(el, 'dsp' + id) === '1',
+    caulkRate:   parseFloat((el.querySelector('.caulk-rate')   ||{value:0}).value) || 0,
+    removalRate: parseFloat((el.querySelector('.removal-rate') ||{value:0}).value) || 0,
+    addName:     (el.querySelector('.add-name')   ||{value:''}).value || '',
+    addAmt:      parseFloat((el.querySelector('.add-amount')  ||{value:0}).value) || 0,
+    addInCost:   el.querySelector('.add-in-cost')  ? el.querySelector('.add-in-cost').checked  : false,
+    addInSales:  el.querySelector('.add-in-sales') ? el.querySelector('.add-in-sales').checked : false,
+    addInCust:   el.querySelector('.add-in-cust')  ? el.querySelector('.add-in-cust').checked  : false,
+    fixtureNo:   (el.querySelector('.fixture-no')  || {value:''}).value || ''
+  };
+}
+
+/* ══════════════════════════════════════════════
+   行計算
+══════════════════════════════════════════════ */
+function calcRow(d){
+  var w = d.w, h = d.h, q = d.q;
+  var area = w * h / 1000000;
+  var mult = d.sellMult || 2.0;
+  var mirror = isMirror(d.g);
+  var custom = isCustom(d.g);
+
+  /* 材料原価・ガラス売価 */
+  var materialCost, glassPrice;
+  if(custom){
+    if(d.priceMode === 'sqm'){
+      materialCost = Math.round(d.customSqm * area * q * 1.10);
+      glassPrice   = Math.round(materialCost * mult);
+    } else if(d.priceMode === 'mat'){
+      materialCost = d.customMat;
+      glassPrice   = Math.round(materialCost * mult);
+    } else {
+      materialCost = d.customMatC || 0;
+      glassPrice   = d.customSell;
+    }
+  } else {
+    var up = GP[d.g] || 0;
+    materialCost = Math.round(up * area * q * 1.10);
+    glassPrice   = Math.round(materialCost * mult);
+  }
+
+  /* 施工 */
+  var constructionBase, removalCost;
+  if(mirror){
+    constructionBase = (OTHER.mirrorLabor || 5000) * q;
+    removalCost = 0;
+  } else {
+    var cr = d.constRate > 0 ? d.constRate : getRate(d.g);
+    constructionBase = Math.round(area * cr * q * 2);
+    removalCost      = d.rem ? Math.round(area * cr * q) : 0;
+  }
+
+  /* コーキング */
+  var caulkingCost = 0, caulkingRemoval = 0, caulkMeters = 0;
+  var ckrRate = 0;
+  if(d.fix === 'caulking'){
+    caulkMeters = ((w + h) / 1000) * 4 * q;
+    var ckr = d.caulkRate > 0 ? d.caulkRate : (d.fire ? OTHER.ckFire : OTHER.ckNormal);
+    caulkingCost = Math.round(caulkMeters * ckr);
+    /* 剥がし代：「あり」の場合のみ計算 */
+    if(d.ckRemoval){
+      ckrRate = d.removalRate > 0 ? d.removalRate : OTHER.ckRemoval;
+      caulkingRemoval = Math.round(caulkMeters * ckrRate);
+    }
+  }
+
+  /* 廃棄代：「あり」の場合のみ */
+  var disposalCost = d.disposal ? (q * OTHER.disposal) : 0;
+
+  /* 追加費用 */
+  var addAmt = d.addAmt || 0;
+
+  /* 行合計（社内） */
+  var rowTotal = glassPrice + constructionBase + removalCost
+               + caulkingCost + caulkingRemoval + disposalCost
+               + (d.addInSales ? addAmt : 0);
+
+  /* 粗利（社内） */
+  var profitRow = rowTotal - materialCost - (d.addInCost ? addAmt : 0);
+
+  return {
+    area:area, materialCost:materialCost, glassPrice:glassPrice,
+    constructionBase:constructionBase, removalCost:removalCost,
+    caulkMeters:caulkMeters, caulkingCost:caulkingCost,
+    caulkingRemoval:caulkingRemoval, ckrRate:ckrRate,
+    disposalCost:disposalCost, addAmt:addAmt,
+    rowTotal:rowTotal, profitRow:profitRow,
+    mult:mult, cr: d.constRate > 0 ? d.constRate : getRate(d.g),
+    mirror:mirror, custom:custom
+  };
+}
+
+/* ══════════════════════════════════════════════
+   メイン計算
+══════════════════════════════════════════════ */
+function calc(){
+  var cards = document.querySelectorAll('.row-card');
+  var datas = [], calcs = [];
+  for(var i = 0; i < cards.length; i++){
+    var d = getRowData(cards[i]);
+    datas.push(d);
+    calcs.push(calcRow(d));
+  }
+
+  var s = readSettings();
+  var q = readQuote();
+
+  /* 諸経費：手入力が1円以上なら優先、0/空欄なら自動/手入力モードに従う */
+  var totalQty = 0;
+  for(var i = 0; i < datas.length; i++) totalQty += datas[i].q;
+  var miscManual = parseFloat((gv('misc-manual') || {value:0}).value) || 0;
+  var misc;
+  if(miscManual > 0){
+    misc = miscManual;
+  } else if(s.miscMode === 'auto'){
+    misc = totalQty >= 4 ? 15000 : (totalQty >= 1 ? 7500 : 0);
+  } else {
+    misc = 0;
+  }
+
+  /* 社内合計 */
+  var iSumGP=0,iSumCC=0,iSumRC=0,iSumCK=0,iSumCKR=0,iSumDC=0,iSumADD=0,iSumMAT=0;
+  for(var i = 0; i < calcs.length; i++){
+    var c = calcs[i];
+    iSumGP  += c.glassPrice;
+    iSumCC  += c.constructionBase;
+    iSumRC  += c.removalCost;
+    iSumCK  += c.caulkingCost;
+    iSumCKR += c.caulkingRemoval;
+    iSumDC  += c.disposalCost;
+    iSumMAT += c.materialCost;
+    if(datas[i].addInSales) iSumADD += c.addAmt;
+  }
+  var iSub   = iSumGP + iSumCC + iSumRC + iSumCK + iSumCKR + iSumDC + iSumADD;
+  var iGrand = iSub + misc - s.discAmt;
+  var iProfit = 0;
+  for(var i = 0; i < calcs.length; i++) iProfit += calcs[i].profitRow;
+  iProfit = iProfit + misc - s.discAmt;
+  var profitRate = iGrand > 0 ? (iProfit / iGrand * 100) : 0;
+
+  /* 元請け用表示値 */
+  var cDisp = [];
+  for(var i = 0; i < calcs.length; i++){
+    var c = calcs[i], dd = datas[i];
+    cDisp.push({
+      glassPrice:       Math.round(c.glassPrice       * s.multG),
+      constructionBase: Math.round(c.constructionBase * s.multC),
+      removalCost:      Math.round(c.removalCost      * s.multC),
+      caulkingCost:     Math.round(c.caulkingCost     * s.multK),
+      caulkingRemoval:  Math.round(c.caulkingRemoval  * s.multKR),
+      disposalCost:     Math.round(c.disposalCost     * s.multD),
+      addAmt:           dd.addInCust ? c.addAmt : 0
+    });
+  }
+
+  var cSumGP=0,cSumCC=0,cSumRC=0,cSumCK=0,cSumCKR=0,cSumDC=0,cSumADD=0;
+  for(var i = 0; i < cDisp.length; i++){
+    var cd = cDisp[i];
+    cSumGP  += cd.glassPrice;
+    cSumCC  += cd.constructionBase;
+    cSumRC  += cd.removalCost;
+    cSumCK  += cd.caulkingCost;
+    cSumCKR += cd.caulkingRemoval;
+    cSumDC  += cd.disposalCost;
+    cSumADD += cd.addAmt;
+  }
+  var cSub   = cSumGP + cSumCC + cSumRC + cSumCK + cSumCKR + cSumDC + cSumADD;
+  var cGrand = cSub + misc - s.discAmt;
+
+  var totals = {
+    iSumGP:iSumGP, iSumCC:iSumCC, iSumRC:iSumRC,
+    iSumCK:iSumCK, iSumCKR:iSumCKR, iSumDC:iSumDC, iSumADD:iSumADD,
+    iSumMAT:iSumMAT, iSub:iSub, iGrand:iGrand,
+    iProfit:iProfit, profitRate:profitRate,
+    cSumGP:cSumGP, cSumCC:cSumCC, cSumRC:cSumRC,
+    cSumCK:cSumCK, cSumCKR:cSumCKR, cSumDC:cSumDC, cSumADD:cSumADD,
+    cSub:cSub, cGrand:cGrand,
+    misc:misc, totalQty:totalQty
+  };
+
+  /* NET金額 */
+  var netAmt;
+  if(q.netMode === 'auto'){
+    netAmt = iGrand;
+  } else {
+    netAmt = q.netTax === 'incl' ? Math.round(q.netManual / 1.1) : q.netManual;
+  }
+
+  /* お見積書金額 */
+  var quoteAmt;
+  if(q.qaMode === 'detail'){
+    quoteAmt = cGrand;
+  } else if(q.qaMode === 'net_mult'){
+    quoteAmt = Math.round(netAmt * q.netMult);
+  } else {
+    quoteAmt = q.qaTax === 'incl' ? Math.round(q.qaManual / 1.1) : q.qaManual;
+  }
+
+  renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q);
+  renderSummary(totals, netAmt, quoteAmt, s, q);
+  renderPrintSummary(totals, netAmt, quoteAmt, s, q);
+}
+
+/* ══════════════════════════════════════════════
+   テーブル描画
+══════════════════════════════════════════════ */
+function makeMiscLabel(totals){
+  return '諸経費';
+}
+
+function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
+  var isInt = viewMode === 'internal';
+  var rows = datas.length;
+  var h = '';
+
+  if(isInt){
+    /* 社内用 21列 */
+    h += '<table><thead><tr>';
+    h += '<th>No.</th><th>建具番号</th><th>寸法(mm)</th><th>品名</th><th>枚数</th><th>面積(m²)</th>';
+    h += '<th>材料単価</th><th>材料原価</th><th>倍率</th><th>ガラス売価</th>';
+    h += '<th>施工単価</th><th>施工工賃</th><th>取外代</th>';
+    h += '<th>CK m数</th><th>CK単価</th><th>CK費</th><th>剥単価</th><th>剥費</th>';
+    h += '<th>廃棄代</th><th>追加費用</th><th>行合計</th><th>粗利</th>';
+    h += '</tr></thead><tbody>';
+
+    for(var i = 0; i < rows; i++){
+      var d = datas[i], c = calcs[i];
+      var dim = (d.w && d.h) ? d.w + ' × ' + d.h : '—';
+      var pname = (d.customName && isCustom(d.g)) ? d.customName : d.g;
+      var ckr_disp = d.caulkRate > 0 ? d.caulkRate : (d.fire ? OTHER.ckFire : OTHER.ckNormal);
+      var up = isCustom(d.g) ? (d.priceMode === 'sqm' ? d.customSqm : '—') : (GP[d.g] || 0);
+      var rowT = c.glassPrice + c.constructionBase + c.removalCost
+               + c.caulkingCost + c.caulkingRemoval + c.disposalCost
+               + (d.addInSales ? c.addAmt : 0);
+      h += '<tr>';
+      h += '<td class="c" data-label="No.">' + (i+1) + '</td>';
+      h += '<td class="l" data-label="建具番号">' + (d.fixtureNo ? escH(d.fixtureNo) : '—') + '</td>';
+      h += '<td class="l" data-label="寸法">' + dim + '</td>';
+      h += '<td class="l" data-label="品名">' + escH(pname) + '</td>';
+      h += '<td class="c" data-label="枚数">' + (d.q || '—') + '</td>';
+      h += '<td class="td-detail" data-label="面積">' + fmtA(c.area * d.q) + '</td>';
+      h += '<td class="td-detail" data-label="材料単価">' + (typeof up === 'number' ? fmt(up) : up) + '</td>';
+      h += '<td class="td-detail" data-label="材料原価">' + fmt(c.materialCost) + '</td>';
+      h += '<td class="c td-detail" data-label="倍率">×' + c.mult.toFixed(2) + '</td>';
+      h += '<td data-label="ガラス売価">' + fmt(c.glassPrice) + '</td>';
+      h += '<td class="td-detail" data-label="施工単価">' + (c.mirror ? '(定額)' : fmt(c.cr)) + '</td>';
+      h += '<td data-label="施工工賃">' + fmt(c.constructionBase) + '</td>';
+      h += '<td data-label="取外代">' + fmt(c.removalCost) + '</td>';
+      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '0.000') + '</td>';
+      h += '<td class="td-detail" data-label="CK単価">' + (d.fix === 'caulking' ? fmt(ckr_disp) : '—') + '</td>';
+      h += '<td data-label="CK費">' + fmt(c.caulkingCost) + '</td>';
+      h += '<td class="td-detail" data-label="剥単価">' + (d.fix === 'caulking' && d.ckRemoval ? fmt(c.ckrRate) : '—') + '</td>';
+      h += '<td data-label="剥費">' + (c.caulkingRemoval > 0 ? fmt(c.caulkingRemoval) : '0') + '</td>';
+      h += '<td data-label="廃棄代">' + (c.disposalCost > 0 ? fmt(c.disposalCost) : '0') + '</td>';
+      h += '<td data-label="追加費用">' + (c.addAmt > 0 ? fmt(c.addAmt) : '—') + '</td>';
+      h += '<td class="td-total" data-label="行合計"><strong>' + fmt(rowT) + '</strong></td>';
+      h += '<td data-label="粗利">' + fmt(c.profitRow) + '</td>';
+      h += '</tr>';
+    }
+    h += '</tbody><tfoot>';
+    h += '<tr class="tr-sub">';
+    h += '<td colspan="5" class="l">小計</td><td>—</td><td>—</td>';
+    h += '<td>' + fmt(totals.iSumMAT) + '</td><td>—</td>';
+    h += '<td>' + fmt(totals.iSumGP) + '</td><td>—</td>';
+    h += '<td>' + fmt(totals.iSumCC) + '</td><td>' + fmt(totals.iSumRC) + '</td>';
+    h += '<td>—</td><td>—</td><td>' + fmt(totals.iSumCK) + '</td>';
+    h += '<td>—</td><td>' + fmt(totals.iSumCKR) + '</td>';
+    h += '<td>' + fmt(totals.iSumDC) + '</td><td>' + fmt(totals.iSumADD) + '</td>';
+    h += '<td><strong>' + fmt(totals.iSub) + '</strong></td><td>—</td></tr>';
+    h += '<tr class="tr-misc"><td colspan="21" class="l">' + makeMiscLabel(totals) + '</td>';
+    h += '<td><strong>' + fmt(totals.misc) + '</strong></td></tr>';
+    if(s.discAmt > 0){
+      h += '<tr class="tr-disc"><td colspan="21" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
+      h += '<td><strong>▲ ' + fmt(s.discAmt) + '</strong></td></tr>';
+    }
+    h += '<tr class="tr-grand"><td colspan="21" class="l">合計金額</td>';
+    h += '<td><strong>' + fmt(totals.iGrand) + '</strong></td></tr>';
+    h += '</tfoot></table>';
+
+    /* モバイル合計 */
+    h += '<div class="mobile-totals">';
+    h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>' + fmt(totals.iSub) + '</span></div>';
+    h += '<div class="mt-row" style="background:#fff8e1"><span>' + makeMiscLabel(totals) + '</span><span>' + fmt(totals.misc) + '</span></div>';
+    if(s.discAmt > 0) h += '<div class="mt-row" style="background:#fef3f3"><span>値引き</span><span>▲ ' + fmt(s.discAmt) + '</span></div>';
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>合計金額</span><span>' + fmt(totals.iGrand) + '</span></div>';
+    h += '<div class="mt-row" style="background:#e8f5e9"><span>粗利（' + totals.profitRate.toFixed(1) + '%）</span><span>' + fmt(totals.iProfit) + '</span></div>';
+    h += '</div>';
+
+  } else {
+    /* 元請け用 13列: No / 建具番号 / 品名 / 寸法 / 枚数 / 総面積 / ガラス金額 / 施工工賃 / CKm数 / CK費 / 剥がし代 / 廃棄代 / 小計 */
+    var totalCArea = 0, totalCKm = 0;
+    for(var i = 0; i < rows; i++){
+      totalCArea += calcs[i].area * datas[i].q;
+      totalCKm   += calcs[i].caulkMeters;
+    }
+
+    h += '<table><thead><tr>';
+    h += '<th>品番</th><th>建具</th><th>種類</th><th>寸法(mm)</th><th>枚数</th>';
+    h += '<th>総面積</th><th>ガラス</th><th>施工</th>';
+    h += '<th>CKm</th><th>CK</th><th>剥</th><th>廃棄</th><th>小計</th>';
+    h += '</tr></thead><tbody>';
+
+    for(var i = 0; i < rows; i++){
+      var d = datas[i], c = calcs[i], cd = cDisp[i];
+      var dim = (d.w && d.h) ? d.w + ' × ' + d.h : '—';
+      var pname = (d.customName && isCustom(d.g)) ? d.customName : d.g;
+      var rowT = cd.glassPrice + cd.constructionBase + cd.removalCost
+               + cd.caulkingCost + cd.caulkingRemoval + cd.disposalCost + cd.addAmt;
+      h += '<tr>';
+      h += '<td class="c" data-label="No.">' + (i+1) + '</td>';
+      h += '<td class="l" data-label="建具番号">' + (d.fixtureNo ? escH(d.fixtureNo) : '—') + '</td>';
+      h += '<td class="l" data-label="品名">' + escH(pname) + '</td>';
+      h += '<td class="l" data-label="寸法">' + dim + '</td>';
+      h += '<td class="c" data-label="枚数">' + (d.q || '—') + '</td>';
+      h += '<td class="td-detail" data-label="総面積">' + fmtA(c.area * d.q) + '</td>';
+      h += '<td data-label="ガラス金額">' + fmt(cd.glassPrice) + '</td>';
+      h += '<td data-label="施工工賃">' + fmt(cd.constructionBase + cd.removalCost) + '</td>';
+      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '—') + '</td>';
+      h += '<td data-label="CK費">' + fmt(cd.caulkingCost) + '</td>';
+      h += '<td data-label="剥がし代">' + (cd.caulkingRemoval > 0 ? fmt(cd.caulkingRemoval) : '0') + '</td>';
+      h += '<td data-label="廃棄代">' + (cd.disposalCost > 0 ? fmt(cd.disposalCost) : '0') + '</td>';
+      h += '<td class="td-total" data-label="小計"><strong>' + fmt(rowT) + '</strong></td>';
+      h += '</tr>';
+    }
+    h += '</tbody><tfoot>';
+    h += '<tr class="tr-sub"><td colspan="5" class="l">小計</td>';
+    h += '<td>' + fmtA(totalCArea) + '</td>';
+    h += '<td>' + fmt(totals.cSumGP) + '</td>';
+    h += '<td>' + fmt(totals.cSumCC + totals.cSumRC) + '</td>';
+    h += '<td>' + fmtA(totalCKm) + '</td>';
+    h += '<td>' + fmt(totals.cSumCK) + '</td>';
+    h += '<td>' + fmt(totals.cSumCKR) + '</td>';
+    h += '<td>' + fmt(totals.cSumDC) + '</td>';
+    h += '<td><strong>' + fmt(totals.cSub) + '</strong></td></tr>';
+    h += '<tr class="tr-misc"><td colspan="12" class="l">' + makeMiscLabel(totals) + '</td>';
+    h += '<td><strong>' + fmt(totals.misc) + '</strong></td></tr>';
+    if(s.discAmt > 0){
+      h += '<tr class="tr-disc"><td colspan="12" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
+      h += '<td><strong>▲ ' + fmt(s.discAmt) + '</strong></td></tr>';
+    }
+    h += '<tr class="tr-grand"><td colspan="12" class="l"><strong>見積金額合計</strong></td>';
+    h += '<td><strong>' + fmt(quoteAmt) + '</strong></td></tr>';
+    h += '</tfoot></table>';
+
+    /* 表下シンプル合計表示 */
+    h += '<div class="customer-total-plain">';
+    h += '<div class="quote-line">見積金額合計：' + fmt(quoteAmt) + ' 円</div>';
+    if(q.showNET){
+      h += '<div class="net-line">NET ¥' + fmt(netAmt) + '円</div>';
+    }
+    h += '</div>';
+
+    /* モバイル合計 */
+    h += '<div class="mobile-totals">';
+    h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>' + fmt(totals.cSub) + '</span></div>';
+    h += '<div class="mt-row" style="background:#fff8e1"><span>' + makeMiscLabel(totals) + '</span><span>' + fmt(totals.misc) + '</span></div>';
+    if(s.discAmt > 0) h += '<div class="mt-row" style="background:#fef3f3"><span>値引き</span><span>▲ ' + fmt(s.discAmt) + '</span></div>';
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>見積金額合計</span><span>' + fmt(quoteAmt) + '</span></div>';
+    if(q.showNET) h += '<div class="mt-row" style="background:#e8f5e9"><span>NET金額（税抜）</span><span>' + fmt(netAmt) + '</span></div>';
+    h += '</div>';
+  }
+
+  gv('tbl-body').innerHTML = h;
+}
+
+/* ══════════════════════════════════════════════
+   サマリー描画
+══════════════════════════════════════════════ */
+function renderSummary(totals, netAmt, quoteAmt, s, q){
+  var isInt = viewMode === 'internal';
+  var grand = isInt ? totals.iGrand : totals.cGrand;
+
+  gv('total-lbl').textContent = isInt ? '合計金額（社内）' : '見積金額合計（元請け）';
+  gv('total-amt').textContent = '¥ ' + fmt(grand);
+
+  var ps = gv('profit-sec');
+  if(isInt){
+    ps.style.display = '';
+    gv('profit-amt').textContent = '¥ ' + fmt(totals.iProfit);
+    gv('profit-rate').textContent = '粗利率 ' + totals.profitRate.toFixed(1) + '%';
+  } else {
+    ps.style.display = 'none';
+  }
+
+  var diff = quoteAmt - netAmt;
+  var qh = '';
+  if(q.showNET){
+    qh += '<div class="quote-row"><span class="ql">NET金額（税抜）</span><span class="qv">¥ ' + fmt(netAmt) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">NET金額（税込）</span><span class="qv">¥ ' + fmt(Math.round(netAmt * 1.1)) + '</span></div>';
+  }
+  if(q.showQA){
+    qh += '<div class="quote-row"><span class="ql">お見積書金額（税抜）</span><span class="qv">¥ ' + fmt(quoteAmt) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">お見積書金額（税込）</span><span class="qv">¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '</span></div>';
+  }
+  if(q.showNET && q.showQA){
+    qh += '<div class="quote-row"><span class="ql">差額（お見積書 − NET）</span><span class="qv">' + (diff >= 0 ? '' : '-') + '¥ ' + fmt(Math.abs(diff)) + '</span></div>';
+  }
+  gv('quote-summary-inner').innerHTML = qh || '<div style="color:#999;font-size:12px">見積書設定で金額を確認できます</div>';
+
+  var pn = (gv('pname') || {value:''}).value;
+  var qtitle = (gv('q-title') || {value:'お見積書'}).value || 'お見積書';
+  var ttl;
+  if(isInt){
+    ttl = '【社内用】 積算明細';
+    if(pn) ttl += ' — ' + pn;
+  } else {
+    ttl = pn ? pn + ' ' + qtitle : qtitle;
+  }
+  gv('tbl-title').textContent = ttl;
+}
+
+/* ══════════════════════════════════════════════
+   印刷用サマリー描画
+══════════════════════════════════════════════ */
+function renderPrintSummary(totals, netAmt, quoteAmt, s, q){
+  var isInt = viewMode === 'internal';
+  var ph = '<div class="print-summary-inner">';
+  ph += '<div class="print-company">ユーエス硝子</div>';
+  if(q.addressee) ph += '<div style="font-size:11px;margin-bottom:2mm">' + escH(q.addressee) + '</div>';
+  if(q.caseName)  ph += '<div style="font-size:11px;margin-bottom:2mm">案件：' + escH(q.caseName) + '</div>';
+  if(q.date)      ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">発行日：' + escH(q.date) + '</div>';
+  if(q.number)    ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">見積番号：' + escH(q.number) + '</div>';
+  if(isInt){
+    ph += '<div class="print-summary-row"><span>合計金額（社内）</span><span>¥ ' + fmt(totals.iGrand) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>粗利</span><span>¥ ' + fmt(totals.iProfit) + '　（粗利率 ' + totals.profitRate.toFixed(1) + '%）</span></div>';
+  } else {
+    ph += '<div class="print-summary-row"><span>見積金額合計（税抜）</span><span>¥ ' + fmt(totals.cGrand) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>見積金額合計（税込）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 1.1)) + '</span></div>';
+    if(q.showNET) ph += '<div class="print-summary-row"><span>NET金額（税抜）</span><span>¥ ' + fmt(netAmt) + '</span></div>';
+    if(q.showQA){
+      ph += '<div class="print-summary-row"><span>お見積書金額（税抜）</span><span>¥ ' + fmt(quoteAmt) + '</span></div>';
+      ph += '<div class="print-summary-row"><span>お見積書金額（税込）</span><span>¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '</span></div>';
+    }
+  }
+  if(q.notes) ph += '<div style="font-size:10px;color:#555;margin-top:2mm;border-top:1px solid #ddd;padding-top:2mm">備考：' + escH(q.notes) + '</div>';
+  ph += '</div>';
+  gv('print-summary').innerHTML = ph;
+}
+
+/* ══════════════════════════════════════════════
+   表示モード切替
+══════════════════════════════════════════════ */
+function setView(mode){
+  viewMode = mode;
+  gv('btn-int').className = 'tbtn' + (mode === 'internal' ? ' on' : '');
+  gv('btn-cus').className = 'tbtn' + (mode === 'customer' ? ' on' : '');
+  calc();
+}
+
+/* ══════════════════════════════════════════════
+   設定パネル開閉
+══════════════════════════════════════════════ */
+function toggleSettings(){
+  var inner = gv('settings-inner');
+  var arrow = gv('settings-arrow');
+  if(!inner) return;
+  var isOpen = inner.style.display !== 'none';
+  inner.style.display = isOpen ? 'none' : '';
+  if(arrow) arrow.className = 'settings-hdr-arrow' + (isOpen ? '' : ' open');
+}
+
+/* ══════════════════════════════════════════════
+   プレビューモード
+══════════════════════════════════════════════ */
+function previewPDF(){
+  calc();
+  document.body.classList.add('preview-mode');
+}
+
+function exitPreview(){
+  document.body.classList.remove('preview-mode');
+}
+
+async function printPDF(){
+  /* ライブラリ未ロード時のフォールバック */
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    alert('PDFライブラリが読み込めていません。インターネット接続を確認してページを再読み込みしてください。');
+    return;
+  }
+
+  var wasPreview = document.body.classList.contains('preview-mode');
+  try {
+    calc();
+
+    /* 横表レイアウトを強制（既存CSSを利用） */
+    document.body.classList.add('preview-mode');
+
+    /* レイアウト安定待ち */
+    await new Promise(function(r){ setTimeout(r, 350); });
+
+    var target = document.querySelector('.tbl-section');
+    if(!target){ alert('PDF出力対象が見つかりません'); return; }
+
+    var canvas = await html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      windowWidth: target.scrollWidth + 40
+    });
+
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    var PW = 297, PH = 210, M = 6;
+    var imgW  = PW - M * 2;
+    var ratio = imgW / canvas.width;
+    var imgH  = canvas.height * ratio;
+    var sliceH = Math.floor((PH - M * 2) / ratio); /* キャンバスの1ページ分高さ(px) */
+
+    var srcY = 0;
+    var first = true;
+    while(srcY < canvas.height){
+      if(!first) pdf.addPage();
+      first = false;
+
+      var h = Math.min(sliceH, canvas.height - srcY);
+      var pageCanvas = document.createElement('canvas');
+      pageCanvas.width  = canvas.width;
+      pageCanvas.height = h;
+      var ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, srcY, canvas.width, h, 0, 0, canvas.width, h);
+
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92),
+                   'JPEG', M, M, imgW, h * ratio);
+      srcY += h;
+    }
+
+    var pname = (gv('pname') || {value:''}).value || 'glass-quote';
+    var filename = pname.replace(/[\\/:*?"<>|]/g, '_') + '.pdf';
+
+    /* iOS判定：別タブで開く */
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS){
+      var blob = pdf.output('blob');
+      var url  = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } else {
+      pdf.save(filename);
+    }
+
+  } catch(e){
+    console.error('PDF生成エラー:', e);
+    alert('PDF生成でエラーが発生しました: ' + e.message);
+  } finally {
+    if(!wasPreview) document.body.classList.remove('preview-mode');
+  }
+}
+
+function saveQuoteHTML(){
+  calc();
+
+  var titleEl = document.getElementById('tbl-title');
+  var bodyEl  = document.getElementById('tbl-body');
+  if(!titleEl || !bodyEl){
+    alert('見積書テーブルが見つかりません');
+    return;
+  }
+
+  var titleHTML = titleEl.outerHTML;
+  var bodyHTML  = bodyEl.outerHTML;
+
+  var html = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n' +
+    '<meta charset="utf-8">\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    '<title>見積書</title>\n' +
+    '<style>\n' +
+    'body{margin:0;padding:16px;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;font-size:11px;color:#1a1a1a;background:#fff;}\n' +
+    'table{border-collapse:collapse;width:100%;table-layout:fixed;}\n' +
+    'th,td{border:1px solid #888;padding:3px 5px;font-size:8.5px;word-break:break-all;}\n' +
+    'th{background:#f0f0f0;font-weight:bold;text-align:center;}\n' +
+    'td{text-align:right;}\n' +
+    'td.left,th.left{text-align:left;}\n' +
+    'td.center,th.center{text-align:center;}\n' +
+    'tfoot td,tfoot th{background:#f8f8f8;font-weight:bold;}\n' +
+    '.customer-total-plain{margin-top:8px;font-size:12px;}\n' +
+    '.customer-total-plain p{margin:4px 0;}\n' +
+    '@media print{body{padding:4px;}@page{size:A4 landscape;margin:6mm;}}\n' +
+    '</style>\n' +
+    '</head>\n<body>\n' +
+    titleHTML + '\n' +
+    bodyHTML  + '\n' +
+    '</body>\n</html>';
+
+  var pname = (gv('pname') || {value:''}).value || '';
+  var filename = (pname ? pname.replace(/[\\/:*?"<>|]/g, '_') : 'glass-quote') + '_見積書.html';
+
+  var blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if(isIOS){
+    window.open(url, '_blank');
+  } else {
+    var a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   案件保存・呼び出し
+══════════════════════════════════════════════ */
+function collectSettingsData(){
+  return {
+    miscMode:  globalRadio('miscMode') || 'auto',
+    miscManual:(gv('misc-manual') || {value:''}).value,
+    discName:  (gv('disc-name')   || {value:''}).value,
+    discAmt:   (gv('disc-amt')    || {value:''}).value,
+    mGlass:    (gv('m-glass')     || {value:''}).value,
+    mConst:    (gv('m-const')     || {value:''}).value,
+    mCaulk:    (gv('m-caulk')     || {value:''}).value,
+    mRemov:    (gv('m-remov')     || {value:''}).value,
+    mDisp:     (gv('m-disp')      || {value:''}).value
+  };
+}
+
+function collectQuoteData(){
+  return {
+    qTitle:    (gv('q-title')    || {value:''}).value,
+    qAddr:     (gv('q-addr')     || {value:''}).value,
+    qCase:     (gv('q-case')     || {value:''}).value,
+    qDate:     (gv('q-date')     || {value:''}).value,
+    qNum:      (gv('q-num')      || {value:''}).value,
+    qNotes:    (gv('q-notes')    || {value:''}).value,
+    netMode:   globalRadio('netMode') || 'auto',
+    netManual: (gv('net-manual') || {value:''}).value,
+    netTax:    globalRadio('netTax') || 'excl',
+    showNet:   gv('show-net') ? gv('show-net').checked : true,
+    qaMode:    globalRadio('qaMode') || 'detail',
+    qaNetMult: (gv('qa-net-mult') || {value:''}).value,
+    qaManual:  (gv('qa-manual')   || {value:''}).value,
+    qaTax:     globalRadio('qaTax') || 'excl',
+    showQa:    gv('show-qa') ? gv('show-qa').checked : true
+  };
+}
+
+function collectRowsData(){
+  var rows = [];
+  document.querySelectorAll('.row-card').forEach(function(card){
+    var id = card.dataset.rid;
+    rows.push({
+      fixtureNo:  (card.querySelector('.fixture-no')   || {value:''}).value,
+      w:          (card.querySelector('.iw')           || {value:''}).value,
+      h:          (card.querySelector('.ih')           || {value:''}).value,
+      q:          (card.querySelector('.iq')           || {value:''}).value,
+      g:          (card.querySelector('.ig')           || {value:'FL5'}).value,
+      priceMode:  radio(card, 'pm' + id) || 'sqm',
+      customName: (card.querySelector('.custom-name')  || {value:''}).value,
+      customSqm:  (card.querySelector('.custom-sqm')   || {value:''}).value,
+      customMat:  (card.querySelector('.custom-mat')   || {value:''}).value,
+      customSell: (card.querySelector('.custom-sell')  || {value:''}).value,
+      customMatC: (card.querySelector('.custom-matc')  || {value:''}).value,
+      sellMult:   (card.querySelector('.sell-mult')    || {value:''}).value,
+      constRate:  (card.querySelector('.const-rate')   || {value:''}).value,
+      fix:        radio(card, 'fix' + id) || 'caulking',
+      rem:        radio(card, 'rem' + id) || '0',
+      fire:       radio(card, 'fir' + id) || '0',
+      ckRemoval:  radio(card, 'ckr' + id) || '0',
+      disposal:   radio(card, 'dsp' + id) || '0',
+      caulkRate:  (card.querySelector('.caulk-rate')   || {value:''}).value,
+      removalRate:(card.querySelector('.removal-rate') || {value:''}).value,
+      addName:    (card.querySelector('.add-name')     || {value:''}).value,
+      addAmt:     (card.querySelector('.add-amount')   || {value:''}).value,
+      addInCost:  card.querySelector('.add-in-cost')  ? card.querySelector('.add-in-cost').checked  : false,
+      addInSales: card.querySelector('.add-in-sales') ? card.querySelector('.add-in-sales').checked : false,
+      addInCust:  card.querySelector('.add-in-cust')  ? card.querySelector('.add-in-cust').checked  : false
+    });
+  });
+  return rows;
+}
+
+function saveProjectData(){
+  try {
+    calc();
+    var projectName = (gv('pname') || {value:''}).value || '無題案件';
+    var data = {
+      pname:    projectName,
+      settings: collectSettingsData(),
+      quote:    collectQuoteData(),
+      rows:     collectRowsData()
+    };
+
+    var projects = [];
+    try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+
+    var now = new Date();
+    var id = String(now.getTime());
+    var savedAt = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2,'0') + '-' +
+      String(now.getDate()).padStart(2,'0') + ' ' +
+      String(now.getHours()).padStart(2,'0') + ':' +
+      String(now.getMinutes()).padStart(2,'0');
+
+    projects.unshift({ id:id, name:projectName, savedAt:savedAt, data:data });
+    localStorage.setItem('usglass_projects', JSON.stringify(projects));
+    alert('案件を保存しました：' + projectName);
+  } catch(e){
+    console.error('案件保存エラー:', e);
+    alert('案件保存でエラーが発生しました：' + (e.message || e));
+  }
+}
+
+function showSavedProjects(){
+  var modal = gv('projectModal');
+  var list  = gv('projectList');
+  if(!modal || !list) return;
+
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+
+  if(projects.length === 0){
+    list.innerHTML = '<p style="color:#888;padding:12px">保存済み案件はありません。</p>';
+  } else {
+    var h = '';
+    projects.forEach(function(p){
+      h += '<div class="project-item">';
+      h += '<div>';
+      h += '<div class="project-item-title">' + escH(p.name || '無題案件') + '</div>';
+      h += '<div class="project-item-date">' + escH(p.savedAt || '') + '</div>';
+      h += '</div>';
+      h += '<div class="project-actions">';
+      h += '<button type="button" class="btn-load" onclick="loadProjectData(\'' + escH(p.id) + '\')">呼び出し</button>';
+      h += '<button type="button" class="btn-del-p" onclick="deleteProjectData(\'' + escH(p.id) + '\')">削除</button>';
+      h += '</div>';
+      h += '</div>';
+    });
+    list.innerHTML = h;
+  }
+  modal.style.display = 'block';
+}
+
+function hideSavedProjects(){
+  var modal = gv('projectModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function deleteProjectData(id){
+  if(!confirm('この保存済み案件を削除しますか？')) return;
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+  projects = projects.filter(function(p){ return p.id !== id; });
+  localStorage.setItem('usglass_projects', JSON.stringify(projects));
+  showSavedProjects();
+}
+
+function loadProjectData(id){
+  var projects = [];
+  try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+  var project = projects.find(function(p){ return p.id === id; });
+  if(!project){ alert('案件が見つかりません'); return; }
+  if(!confirm('この案件を呼び出しますか？現在の入力内容は上書きされます。')) return;
+  applyProjectData(project.data);
+  hideSavedProjects();
+  alert('案件を呼び出しました：' + project.name);
+}
+
+function setRadio(name, value){
+  var el = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+  if(el) el.checked = true;
+}
+
+function applyRowData(card, row){
+  if(!card || !row) return;
+  var id = card.dataset.rid;
+  if(card.querySelector('.fixture-no'))  card.querySelector('.fixture-no').value  = row.fixtureNo  || '';
+  if(card.querySelector('.iw'))          card.querySelector('.iw').value           = row.w          || '';
+  if(card.querySelector('.ih'))          card.querySelector('.ih').value           = row.h          || '';
+  if(card.querySelector('.iq'))          card.querySelector('.iq').value           = row.q          || 1;
+  if(card.querySelector('.ig'))          card.querySelector('.ig').value           = row.g          || 'FL5';
+  if(card.querySelector('.custom-name')) card.querySelector('.custom-name').value  = row.customName || '';
+  if(card.querySelector('.custom-sqm'))  card.querySelector('.custom-sqm').value   = row.customSqm  || 0;
+  if(card.querySelector('.custom-mat'))  card.querySelector('.custom-mat').value   = row.customMat  || 0;
+  if(card.querySelector('.custom-sell')) card.querySelector('.custom-sell').value  = row.customSell || 0;
+  if(card.querySelector('.custom-matc')) card.querySelector('.custom-matc').value  = row.customMatC || 0;
+  if(card.querySelector('.sell-mult'))   card.querySelector('.sell-mult').value    = row.sellMult   || 2.0;
+  if(card.querySelector('.const-rate'))  card.querySelector('.const-rate').value   = row.constRate  || '';
+  if(card.querySelector('.caulk-rate'))  card.querySelector('.caulk-rate').value   = row.caulkRate  || '';
+  if(card.querySelector('.removal-rate'))card.querySelector('.removal-rate').value = row.removalRate|| '';
+  if(card.querySelector('.add-name'))    card.querySelector('.add-name').value     = row.addName    || '';
+  if(card.querySelector('.add-amount'))  card.querySelector('.add-amount').value   = row.addAmt     || 0;
+  if(card.querySelector('.add-in-cost'))  card.querySelector('.add-in-cost').checked  = !!row.addInCost;
+  if(card.querySelector('.add-in-sales')) card.querySelector('.add-in-sales').checked = !!row.addInSales;
+  if(card.querySelector('.add-in-cust'))  card.querySelector('.add-in-cust').checked  = !!row.addInCust;
+  setRadio('pm'  + id, row.priceMode  || 'sqm');
+  setRadio('fix' + id, row.fix        || 'caulking');
+  setRadio('rem' + id, row.rem        || '0');
+  setRadio('fir' + id, row.fire       || '0');
+  setRadio('ckr' + id, row.ckRemoval  || '0');
+  setRadio('dsp' + id, row.disposal   || '0');
+  updateRow(card);
+}
+
+function applyProjectData(data){
+  if(!data) return;
+
+  if(gv('pname')) gv('pname').value = data.pname || '';
+
+  var s = data.settings || {};
+  setRadio('miscMode', s.miscMode || 'auto');
+  if(gv('misc-manual')) gv('misc-manual').value = s.miscManual || 0;
+  if(gv('disc-name'))   gv('disc-name').value   = s.discName   || '';
+  if(gv('disc-amt'))    gv('disc-amt').value     = s.discAmt    || 0;
+  if(gv('m-glass'))     gv('m-glass').value      = s.mGlass     || 1.25;
+  if(gv('m-const'))     gv('m-const').value      = s.mConst     || 1.75;
+  if(gv('m-caulk'))     gv('m-caulk').value      = s.mCaulk     || 1.48;
+  if(gv('m-remov'))     gv('m-remov').value      = s.mRemov     || 1.48;
+  if(gv('m-disp'))      gv('m-disp').value       = s.mDisp      || 1.00;
+
+  var q = data.quote || {};
+  if(gv('q-title'))    gv('q-title').value    = q.qTitle    || 'お見積書';
+  if(gv('q-addr'))     gv('q-addr').value     = q.qAddr     || '';
+  if(gv('q-case'))     gv('q-case').value     = q.qCase     || '';
+  if(gv('q-date'))     gv('q-date').value     = q.qDate     || '';
+  if(gv('q-num'))      gv('q-num').value      = q.qNum      || '';
+  if(gv('q-notes'))    gv('q-notes').value    = q.qNotes    || '';
+  setRadio('netMode', q.netMode || 'auto');
+  if(gv('net-manual'))  gv('net-manual').value  = q.netManual  || 0;
+  setRadio('netTax', q.netTax || 'excl');
+  if(gv('show-net'))    gv('show-net').checked   = q.showNet !== false;
+  setRadio('qaMode', q.qaMode || 'detail');
+  if(gv('qa-net-mult')) gv('qa-net-mult').value  = q.qaNetMult  || 1.25;
+  if(gv('qa-manual'))   gv('qa-manual').value    = q.qaManual   || 0;
+  setRadio('qaTax', q.qaTax || 'excl');
+  if(gv('show-qa'))     gv('show-qa').checked    = q.showQa !== false;
+
+  var box = gv('row-cards');
+  if(box) box.innerHTML = '';
+  rid = 0;
+
+  var rowsData = data.rows || [];
+  if(rowsData.length === 0){
+    addRow();
+  } else {
+    rowsData.forEach(function(row){
+      addRow();
+      var cards = document.querySelectorAll('.row-card');
+      applyRowData(cards[cards.length - 1], row);
+    });
+  }
+
+  updateSettings();
+  calc();
+}
+
+function bindButtons(){
+  function safe(id, fn){
+    var btn = gv(id);
+    if(!btn) return;
+    btn.addEventListener('click', function(){ fn(); }, false);
+    btn.addEventListener('touchend', function(){ fn(); }, false);
+  }
+  safe('pdfBtn',         printPDF);
+  safe('previewPdfBtn',  printPDF);
+  safe('previewBtn',     previewPDF);
+  safe('exitPreviewBtn', exitPreview);
+  safe('masterSaveBtn',  saveMasterPrices);
+  safe('masterResetBtn', resetMasterPrices);
+  safe('saveQuoteBtn',    saveQuoteHTML);
+  safe('saveProjectBtn',  saveProjectData);
+  safe('loadProjectBtn',  showSavedProjects);
+  safe('exportMasterBtn', exportMasterPrices);
+  safe('importMasterBtn', importMasterPrices);
+}
+
+window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
+
+/* ══════════════════════════════════════════════
+   行番号更新
+══════════════════════════════════════════════ */
+function renumber(){
+  var cards = document.querySelectorAll('.row-card');
+  for(var i = 0; i < cards.length; i++){
+    var n = cards[i].querySelector('.rnum');
+    if(n) n.textContent = i + 1;
+    var b = cards[i].querySelector('.btn-del');
+    if(b) b.style.display = cards.length > 1 ? '' : 'none';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   行カードの動的表示制御
+══════════════════════════════════════════════ */
+function updateRow(card){
+  if(!card) return;
+  var id = card.dataset.rid;
+  var gType = card.querySelector('.ig').value;
+  var cf  = card.querySelector('.custom-fields');
+  var ckf = card.querySelector('.caulk-fields');
+
+  if(cf) cf.style.display = isCustom(gType) ? '' : 'none';
+
+  var fixVal = radio(card, 'fix' + id);
+  if(ckf) ckf.style.display = (fixVal === 'caulking') ? '' : 'none';
+
+  var priceMode = radio(card, 'pm' + id);
+  var sqmRow  = card.querySelector('.pm-sqm-row');
+  var matRow  = card.querySelector('.pm-mat-row');
+  var sellRow = card.querySelector('.pm-sell-row');
+  if(sqmRow)  sqmRow.style.display  = (priceMode === 'sqm')  ? '' : 'none';
+  if(matRow)  matRow.style.display  = (priceMode === 'mat')  ? '' : 'none';
+  if(sellRow) sellRow.style.display = (priceMode === 'sell') ? '' : 'none';
+}
+
+/* ══════════════════════════════════════════════
+   設定パネルのモード切替
+══════════════════════════════════════════════ */
+function updateSettings(){
+  var qaModeVal = globalRadio('qaMode');
+  var nmRow = gv('qa-net-mult-row');
+  var mRow  = gv('qa-manual-row');
+  if(nmRow) nmRow.style.display = (qaModeVal === 'net_mult') ? '' : 'none';
+  if(mRow)  mRow.style.display  = (qaModeVal === 'manual')   ? '' : 'none';
+  calc();
+}
+
+/* ══════════════════════════════════════════════
+   ガラス種類 SELECT HTML
+══════════════════════════════════════════════ */
+var GOPTS = (function(){
+  var s = '<optgroup label="フロートガラス">';
+  ['FL2','FL3','FL5','FL6','FL8','FL10'].forEach(function(v){
+    s += '<option value="' + v + '"' + (v === 'FL5' ? ' selected' : '') + '>' + v + '</option>';
+  });
+  s += '</optgroup>';
+  s += '<optgroup label="型板・霞ガラス">';
+  ['F6','Fw','pw'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  s += '<optgroup label="ミラー">';
+  ['Yカガミ3','Yカガミ5','Yカガミ6'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  s += '<optgroup label="合わせガラス">';
+  ['3+3透明','4+4透明','5+5透明','3+3乳半','4+4乳半'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  s += '<optgroup label="ラミブロック">';
+  ['ラミブロック3+3透明','ラミブロック4+4透明','ラミブロック3+3乳半','ラミブロック4+4乳半'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  s += '<optgroup label="耐熱ガラス">';
+  ['耐熱5','耐熱8'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  s += '<optgroup label="特殊ガラス">';
+  ['自由入力','複層ガラス','LOW-E複層','特注品'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
+  return s;
+})();
+
+/* ══════════════════════════════════════════════
+   行追加（template literal で引用符エラー回避）
+══════════════════════════════════════════════ */
+function addRow(){
+  rid++;
+  var id = rid;
+  var div = document.createElement('div');
+  div.className = 'row-card';
+  div.id = 'rc' + id;
+  div.dataset.rid = id;
+
+  div.innerHTML = `
+    <div class="card-hdr">
+      <span class="card-ttl">明細 <span class="rnum"></span></span>
+      <button type="button" class="btn-del" onclick="delRow('rc${id}')">削除</button>
+    </div>
+    <div class="card-sections">
+
+      <div>
+        <div class="csec-title">基本情報</div>
+        <div class="fields">
+          <div class="fg"><span class="fglabel">建具番号</span>
+            <input type="text" class="fixture-no" placeholder="例：AW-1" oninput="calc()"></div>
+          <div class="fg"><span class="fglabel">幅 (mm)</span>
+            <input type="number" class="iw" placeholder="例: 600" min="0" step="1" oninput="calc()"></div>
+          <div class="fg"><span class="fglabel">高さ (mm)</span>
+            <input type="number" class="ih" placeholder="例: 900" min="0" step="1" oninput="calc()"></div>
+          <div class="fg"><span class="fglabel">枚数</span>
+            <input type="number" class="iq" value="1" min="1" step="1" oninput="calc()"></div>
+          <div class="fg"><span class="fglabel">ガラス種類</span>
+            <select class="ig" onchange="calc();updateRow(this.closest('.row-card'))">${GOPTS}</select></div>
+        </div>
+      </div>
+
+      <div class="custom-fields" style="display:none">
+        <div class="csec-title">カスタム設定</div>
+        <div class="fields-wide">
+          <div class="fg"><span class="fglabel">ガラス名称</span>
+            <input type="text" class="custom-name" placeholder="品名（任意）" oninput="calc()"></div>
+        </div>
+        <div class="rrow" style="margin-top:8px">
+          <label style="font-size:12px;font-weight:700;color:#555;min-width:70px">計算方法</label>
+          <label><input type="radio" name="pm${id}" value="sqm" checked
+            onchange="calc();updateRow(this.closest('.row-card'))"> A：平米単価</label>
+          <label><input type="radio" name="pm${id}" value="mat"
+            onchange="calc();updateRow(this.closest('.row-card'))"> B：材料原価直接</label>
+          <label><input type="radio" name="pm${id}" value="sell"
+            onchange="calc();updateRow(this.closest('.row-card'))"> C：売価直接</label>
+        </div>
+        <div class="fields-wide" style="margin-top:8px">
+          <div class="fg pm-sqm-row"><span class="fglabel">A：材料単価 (円/m²)</span>
+            <input type="number" class="custom-sqm" placeholder="0" min="0" step="100" oninput="calc()"></div>
+          <div class="fg pm-mat-row" style="display:none"><span class="fglabel">B：材料原価 (円)</span>
+            <input type="number" class="custom-mat" placeholder="0" min="0" step="100" oninput="calc()"></div>
+          <div class="fg pm-sell-row" style="display:none"><span class="fglabel">C：材料原価 (円・任意)</span>
+            <input type="number" class="custom-matc" placeholder="0" min="0" step="100" oninput="calc()"></div>
+          <div class="fg pm-sell-row" style="display:none"><span class="fglabel">C：ガラス売価 (円)</span>
+            <input type="number" class="custom-sell" placeholder="0" min="0" step="100" oninput="calc()"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="csec-title">単価設定</div>
+        <div class="fields">
+          <div class="fg"><span class="fglabel">売価倍率</span>
+            <input type="number" class="sell-mult" value="2.0" min="0" step="0.1" oninput="calc()"></div>
+          <div class="fg"><span class="fglabel">施工単価 (空欄=マスター使用)</span>
+            <input type="number" class="const-rate" placeholder="マスター値を使用" min="0" step="100" oninput="calc()"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="csec-title">施工設定</div>
+        <div class="fields">
+          <div class="fg"><span class="fglabel">留め方</span>
+            <div class="rrow">
+              <label><input type="radio" name="fix${id}" value="caulking" checked
+                onchange="calc();updateRow(this.closest('.row-card'))"> コーキング留め</label>
+              <label><input type="radio" name="fix${id}" value="bead"
+                onchange="calc();updateRow(this.closest('.row-card'))"> ビード留め</label>
+            </div>
+          </div>
+          <div class="fg"><span class="fglabel">取り外し込み</span>
+            <div class="rrow">
+              <label><input type="radio" name="rem${id}" value="0" checked onchange="calc()"> なし</label>
+              <label><input type="radio" name="rem${id}" value="1" onchange="calc()"> あり</label>
+            </div>
+          </div>
+          <div class="fg"><span class="fglabel">廃棄代</span>
+            <div class="rrow">
+              <label><input type="radio" name="dsp${id}" value="0" checked onchange="calc()"> なし</label>
+              <label><input type="radio" name="dsp${id}" value="1" onchange="calc()"> あり（枚数×1,000円）</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="caulk-fields">
+          <div class="fields">
+            <div class="fg"><span class="fglabel">防火コーキング</span>
+              <div class="rrow">
+                <label><input type="radio" name="fir${id}" value="0" checked onchange="calc()"> なし（300円/m）</label>
+                <label><input type="radio" name="fir${id}" value="1" onchange="calc()"> あり（700円/m）</label>
+              </div>
+            </div>
+            <div class="fg"><span class="fglabel">コーキング剥がし</span>
+              <div class="rrow">
+                <label><input type="radio" name="ckr${id}" value="0" checked onchange="calc()"> なし</label>
+                <label><input type="radio" name="ckr${id}" value="1" onchange="calc()"> あり（300円/m）</label>
+              </div>
+            </div>
+            <div class="fg"><span class="fglabel">コーキング単価 (円/m・空欄=自動)</span>
+              <input type="number" class="caulk-rate" placeholder="空欄＝自動(300/700)" min="0" step="10" oninput="calc()"></div>
+            <div class="fg"><span class="fglabel">剥がし単価 (円/m・空欄=300)</span>
+              <input type="number" class="removal-rate" placeholder="空欄＝300" min="0" step="10" oninput="calc()"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="csec-title">追加費用</div>
+        <div class="add-fields">
+          <div class="fields-wide">
+            <div class="fg"><span class="fglabel">追加費用名</span>
+              <input type="text" class="add-name" placeholder="例：搬入費" oninput="calc()"></div>
+            <div class="fg"><span class="fglabel">追加費用金額 (円)</span>
+              <input type="number" class="add-amount" value="0" min="0" step="100" oninput="calc()"></div>
+          </div>
+          <div class="rrow" style="margin-top:8px;gap:18px">
+            <label><input type="checkbox" class="add-in-cost"  onchange="calc()"> 原価に含む</label>
+            <label><input type="checkbox" class="add-in-sales" onchange="calc()"> 売上に含む</label>
+            <label><input type="checkbox" class="add-in-cust"  onchange="calc()"> 元請け用に表示</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  gv('row-cards').appendChild(div);
+  renumber();
+  calc();
+}
+
+/* ══════════════════════════════════════════════
+   行削除
+══════════════════════════════════════════════ */
+function delRow(id){
+  var el = gv(id);
+  if(el) el.parentNode.removeChild(el);
+  renumber();
+  calc();
+}
+
+/* ══════════════════════════════════════════════
+   単価マスター
+══════════════════════════════════════════════ */
+var GP_KEYS = ['FL2','FL3','FL5','FL6','FL8','FL10','F6','Fw','pw',
+               'Yカガミ3','Yカガミ5','Yカガミ6',
+               '3+3透明','4+4透明','5+5透明','3+3乳半','4+4乳半',
+               'ラミブロック3+3透明','ラミブロック4+4透明',
+               'ラミブロック3+3乳半','ラミブロック4+4乳半',
+               '耐熱5','耐熱8'];
+var CR_KEYS = ['FL5','FL6','FL8','FL10','FL12','F6','Fw','pw'];
+
+function renderMasterPanel(){
+  var gpGrid = gv('mp-gp-grid');
+  var crGrid = gv('mp-cr-grid');
+  if(!gpGrid || !crGrid) return;
+
+  gpGrid.innerHTML = GP_KEYS.map(function(k){
+    return '<div class="master-item">' +
+      '<label title="' + k + '">' + k + '</label>' +
+      '<input type="number" id="mp-gp-' + k + '" min="0" step="10" value="' + (GP[k] || 0) + '">' +
+      '</div>';
+  }).join('');
+
+  crGrid.innerHTML = CR_KEYS.map(function(k){
+    return '<div class="master-item">' +
+      '<label title="' + k + '">' + k + '</label>' +
+      '<input type="number" id="mp-cr-' + k + '" min="0" step="10" value="' + (CR[k] || 0) + '">' +
+      '</div>';
+  }).join('');
+
+  var oth = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'];
+  oth.forEach(function(k){
+    var el = gv('mp-oth-' + k);
+    if(el) el.value = OTHER[k] || 0;
+  });
+}
+
+function loadMasterPrices(){
+  try {
+    var sGP  = localStorage.getItem('usglass_GP');
+    var sCR  = localStorage.getItem('usglass_CR');
+    var sOTH = localStorage.getItem('usglass_OTHER');
+    if(sGP)  GP    = JSON.parse(sGP);
+    if(sCR)  CR    = JSON.parse(sCR);
+    if(sOTH) OTHER = Object.assign({}, DEFAULT_OTHER, JSON.parse(sOTH));
+  } catch(e){}
+}
+
+function readMasterInputs(){
+  GP_KEYS.forEach(function(k){
+    var el = gv('mp-gp-' + k);
+    if(el) GP[k] = parseFloat(el.value) || 0;
+  });
+  CR_KEYS.forEach(function(k){
+    var el = gv('mp-cr-' + k);
+    if(el) CR[k] = parseFloat(el.value) || 0;
+  });
+  ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'].forEach(function(k){
+    var el = gv('mp-oth-' + k);
+    if(el) OTHER[k] = parseFloat(el.value) || 0;
+  });
+}
+
+function saveMasterPrices(){
+  readMasterInputs();
+  try {
+    localStorage.setItem('usglass_GP',    JSON.stringify(GP));
+    localStorage.setItem('usglass_CR',    JSON.stringify(CR));
+    localStorage.setItem('usglass_OTHER', JSON.stringify(OTHER));
+  } catch(e){}
+  var msg = gv('master-saved-msg');
+  if(msg){ msg.style.display = 'inline'; setTimeout(function(){ msg.style.display = 'none'; }, 2000); }
+  updateMasterWarning();
+  calc();
+}
+
+function resetMasterPrices(){
+  if(!confirm('単価を0（未設定）に戻します。よろしいですか？')) return;
+  GP    = Object.assign({}, DEFAULT_GP);
+  CR    = Object.assign({}, DEFAULT_CR);
+  OTHER = Object.assign({}, DEFAULT_OTHER);
+  try {
+    localStorage.removeItem('usglass_GP');
+    localStorage.removeItem('usglass_CR');
+    localStorage.removeItem('usglass_OTHER');
+  } catch(e){}
+  renderMasterPanel();
+  updateMasterWarning();
+  calc();
+}
+
+function isMasterUnset(){
+  return !GP['FL5'] || !GP['FL6'] || !GP['pw'] || !OTHER.ckNormal || !OTHER.disposal;
+}
+
+function updateMasterWarning(){
+  var el = gv('masterWarning');
+  if(el) el.style.display = isMasterUnset() ? '' : 'none';
+}
+
+function exportMasterPrices(){
+  try {
+    readMasterInputs();
+    var data = { GP: GP, CR: CR, OTHER: OTHER };
+    var text = JSON.stringify(data, null, 2);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        alert('単価マスターをクリップボードにコピーしました。\nメモアプリなどに貼り付けて保存してください。');
+      }).catch(function(){ showMasterExportText(text); });
+    } else {
+      showMasterExportText(text);
+    }
+  } catch(e){
+    alert('単価書き出しでエラーが発生しました：' + (e.message || e));
+  }
+}
+
+function showMasterExportText(text){
+  prompt('以下の単価マスターをコピーして保存してください', text);
+}
+
+function importMasterPrices(){
+  try {
+    var text = prompt('単価マスターJSONを貼り付けてください');
+    if(!text) return;
+    var data = JSON.parse(text);
+    if(data.GP)    GP    = Object.assign({}, DEFAULT_GP,    data.GP);
+    if(data.CR)    CR    = Object.assign({}, DEFAULT_CR,    data.CR);
+    if(data.OTHER) OTHER = Object.assign({}, DEFAULT_OTHER, data.OTHER);
+    localStorage.setItem('usglass_GP',    JSON.stringify(GP));
+    localStorage.setItem('usglass_CR',    JSON.stringify(CR));
+    localStorage.setItem('usglass_OTHER', JSON.stringify(OTHER));
+    renderMasterPanel();
+    updateMasterWarning();
+    calc();
+    alert('単価マスターを読み込みました');
+  } catch(e){
+    alert('単価マスターの読み込みに失敗しました：' + (e.message || e));
+  }
+}
+
+/* ══════════════════════════════════════════════
+   設定パネルのラジオ変更検知
+══════════════════════════════════════════════ */
+document.addEventListener('change', function(e){
+  if(e.target.name === 'qaMode') updateSettings();
+});
+
+/* ══════════════════════════════════════════════
+   初期化
+══════════════════════════════════════════════ */
+loadMasterPrices();
+addRow();
+renderMasterPanel();
+updateMasterWarning();
+</script>
+</body>
+</html>
