@@ -432,6 +432,7 @@ tfoot td.l{text-align:left}
   <!-- アクションバー -->
   <div class="action-bar no-print">
     <button type="button" id="previewBtn" class="btn-preview">PDF確認プレビュー</button>
+    <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
     <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
 
@@ -1118,6 +1119,62 @@ async function printPDF(){
   }
 }
 
+function saveQuoteHTML(){
+  calc();
+
+  var titleEl = document.getElementById('tbl-title');
+  var bodyEl  = document.getElementById('tbl-body');
+  if(!titleEl || !bodyEl){
+    alert('見積書テーブルが見つかりません');
+    return;
+  }
+
+  var titleHTML = titleEl.outerHTML;
+  var bodyHTML  = bodyEl.outerHTML;
+
+  var html = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n' +
+    '<meta charset="utf-8">\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    '<title>見積書</title>\n' +
+    '<style>\n' +
+    'body{margin:0;padding:16px;font-family:"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;font-size:11px;color:#1a1a1a;background:#fff;}\n' +
+    'table{border-collapse:collapse;width:100%;table-layout:fixed;}\n' +
+    'th,td{border:1px solid #888;padding:3px 5px;font-size:8.5px;word-break:break-all;}\n' +
+    'th{background:#f0f0f0;font-weight:bold;text-align:center;}\n' +
+    'td{text-align:right;}\n' +
+    'td.left,th.left{text-align:left;}\n' +
+    'td.center,th.center{text-align:center;}\n' +
+    'tfoot td,tfoot th{background:#f8f8f8;font-weight:bold;}\n' +
+    '.customer-total-plain{margin-top:8px;font-size:12px;}\n' +
+    '.customer-total-plain p{margin:4px 0;}\n' +
+    '@media print{body{padding:4px;}@page{size:A4 landscape;margin:6mm;}}\n' +
+    '</style>\n' +
+    '</head>\n<body>\n' +
+    titleHTML + '\n' +
+    bodyHTML  + '\n' +
+    '</body>\n</html>';
+
+  var pname = (gv('pname') || {value:''}).value || '';
+  var filename = (pname ? pname.replace(/[\\/:*?"<>|]/g, '_') : 'glass-quote') + '_見積書.html';
+
+  var blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if(isIOS){
+    window.open(url, '_blank');
+  } else {
+    var a = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  }
+}
+
 function bindButtons(){
   function safe(id, fn){
     var btn = gv(id);
@@ -1131,6 +1188,7 @@ function bindButtons(){
   safe('exitPreviewBtn', exitPreview);
   safe('masterSaveBtn',  saveMasterPrices);
   safe('masterResetBtn', resetMasterPrices);
+  safe('saveQuoteBtn',   saveQuoteHTML);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
