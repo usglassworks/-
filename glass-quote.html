@@ -385,6 +385,7 @@ tfoot td.l{text-align:left}
           <div class="master-item"><label>防火CK単価(円/m)</label><input type="number" id="mp-oth-ckFire" min="0" step="10"></div>
           <div class="master-item"><label>CK剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
           <div class="master-item"><label>廃棄代(円/枚)</label><input type="number" id="mp-oth-disposal" min="0" step="100"></div>
+          <div class="master-item"><label>Yカガミ施工費(円/枚)</label><input type="number" id="mp-oth-mirrorLabor" min="0" step="100"></div>
         </div>
 
         <div class="master-btn-row">
@@ -458,7 +459,7 @@ var DEFAULT_CR = {
   'F6':1200,'Fw':1300,'pw':1300
 };
 
-var DEFAULT_OTHER = {ckNormal:300, ckFire:700, ckRemoval:300, disposal:1000};
+var DEFAULT_OTHER = {ckNormal:300, ckFire:700, ckRemoval:300, disposal:1000, mirrorLabor:5000};
 
 var GP    = Object.assign({}, DEFAULT_GP);
 var CR    = Object.assign({}, DEFAULT_CR);
@@ -606,7 +607,7 @@ function calcRow(d){
   /* 施工 */
   var constructionBase, removalCost;
   if(mirror){
-    constructionBase = 5000 * q;
+    constructionBase = (OTHER.mirrorLabor || 5000) * q;
     removalCost = 0;
   } else {
     var cr = d.constRate > 0 ? d.constRate : getRate(d.g);
@@ -1328,7 +1329,7 @@ function renderMasterPanel(){
       '</div>';
   }).join('');
 
-  var oth = ['ckNormal','ckFire','ckRemoval','disposal'];
+  var oth = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'];
   oth.forEach(function(k){
     var el = gv('mp-oth-' + k);
     if(el) el.value = OTHER[k] || 0;
@@ -1342,7 +1343,7 @@ function loadMasterPrices(){
     var sOTH = localStorage.getItem('usglass_OTHER');
     if(sGP)  GP    = JSON.parse(sGP);
     if(sCR)  CR    = JSON.parse(sCR);
-    if(sOTH) OTHER = JSON.parse(sOTH);
+    if(sOTH) OTHER = Object.assign({}, DEFAULT_OTHER, JSON.parse(sOTH));
   } catch(e){}
 }
 
@@ -1355,7 +1356,7 @@ function saveMasterPrices(){
     var el = gv('mp-cr-' + k);
     if(el) CR[k] = parseFloat(el.value) || 0;
   });
-  ['ckNormal','ckFire','ckRemoval','disposal'].forEach(function(k){
+  ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'].forEach(function(k){
     var el = gv('mp-oth-' + k);
     if(el) OTHER[k] = parseFloat(el.value) || 0;
   });
