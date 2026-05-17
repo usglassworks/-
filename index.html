@@ -516,7 +516,7 @@ var rid = 0;
 function fmt(n){ return Math.round(n).toLocaleString('ja-JP'); }
 function fmtA(n){ return (+n).toFixed(3); }
 function gv(id){ return document.getElementById(id); }
-function getRate(t){ return CR[t] !== undefined ? CR[t] : 1200; }
+function getRate(t){ return CR[t] !== undefined ? CR[t] : 0; }
 function isCustom(t){ return !!CUSTOM_TYPES[t]; }
 function isMirror(t){ return !!MIRRORS[t]; }
 
@@ -646,7 +646,7 @@ function calcRow(d){
   /* 施工 */
   var constructionBase, removalCost;
   if(mirror){
-    constructionBase = (OTHER.mirrorLabor || 5000) * q;
+    constructionBase = (OTHER.mirrorLabor || 0) * q;
     removalCost = 0;
   } else {
     var cr = d.constRate > 0 ? d.constRate : getRate(d.g);
