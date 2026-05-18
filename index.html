@@ -485,6 +485,8 @@ tfoot td.l{text-align:left}
 var DEFAULT_GP = {
   'FL2':0,'FL3':0,'FL5':0,'FL6':0,'FL8':0,'FL10':0,
   'F6':0,'Fw':0,'pw':0,
+  'グリーンラル6':0,'グリーンラル8':0,
+  'スリガラス3':0,'スリガラス5':0,'スリガラス6':0,
   'Yカガミ3':0,'Yカガミ5':0,'Yカガミ6':0,
   '3+3透明':0,'4+4透明':0,'5+5透明':0,
   '3+3乳半':0,'4+4乳半':0,
@@ -495,7 +497,9 @@ var DEFAULT_GP = {
 
 var DEFAULT_CR = {
   'FL5':0,'FL6':0,'FL8':0,'FL10':0,'FL12':0,
-  'F6':0,'Fw':0,'pw':0
+  'F6':0,'Fw':0,'pw':0,
+  'グリーンラル6':0,'グリーンラル8':0,
+  'スリガラス3':0,'スリガラス5':0,'スリガラス6':0
 };
 
 var DEFAULT_OTHER = {ckNormal:0, ckFire:0, ckRemoval:0, disposal:0, mirrorLabor:0};
@@ -1539,6 +1543,9 @@ var GOPTS = (function(){
   s += '<optgroup label="型板・霞ガラス">';
   ['F6','Fw','pw'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
   s += '</optgroup>';
+  s += '<optgroup label="特殊・装飾ガラス">';
+  ['グリーンラル6','グリーンラル8','スリガラス3','スリガラス5','スリガラス6'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
+  s += '</optgroup>';
   s += '<optgroup label="ミラー">';
   ['Yカガミ3','Yカガミ5','Yカガミ6'].forEach(function(v){ s += '<option value="' + v + '">' + v + '</option>'; });
   s += '</optgroup>';
@@ -1714,12 +1721,16 @@ function delRow(id){
    単価マスター
 ══════════════════════════════════════════════ */
 var GP_KEYS = ['FL2','FL3','FL5','FL6','FL8','FL10','F6','Fw','pw',
+               'グリーンラル6','グリーンラル8',
+               'スリガラス3','スリガラス5','スリガラス6',
                'Yカガミ3','Yカガミ5','Yカガミ6',
                '3+3透明','4+4透明','5+5透明','3+3乳半','4+4乳半',
                'ラミブロック3+3透明','ラミブロック4+4透明',
                'ラミブロック3+3乳半','ラミブロック4+4乳半',
                '耐熱5','耐熱8'];
-var CR_KEYS = ['FL5','FL6','FL8','FL10','FL12','F6','Fw','pw'];
+var CR_KEYS = ['FL5','FL6','FL8','FL10','FL12','F6','Fw','pw',
+               'グリーンラル6','グリーンラル8',
+               'スリガラス3','スリガラス5','スリガラス6'];
 
 function renderMasterPanel(){
   var gpGrid = gv('mp-gp-grid');
