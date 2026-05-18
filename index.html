@@ -320,8 +320,8 @@ tfoot td.l{text-align:left}
           <div class="mult-grid">
             <div class="mult-item"><label>ガラス</label><input type="number" id="m-glass" value="1.25" step="0.01" min="0" oninput="calc()"></div>
             <div class="mult-item"><label>施工</label><input type="number" id="m-const" value="1.75" step="0.01" min="0" oninput="calc()"></div>
-            <div class="mult-item"><label>CK</label><input type="number" id="m-caulk" value="1.48" step="0.01" min="0" oninput="calc()"></div>
-            <div class="mult-item"><label>CK剥がし</label><input type="number" id="m-remov" value="1.48" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>コーキング</label><input type="number" id="m-caulk" value="1.48" step="0.01" min="0" oninput="calc()"></div>
+            <div class="mult-item"><label>コーキング剥がし</label><input type="number" id="m-remov" value="1.48" step="0.01" min="0" oninput="calc()"></div>
             <div class="mult-item"><label>廃棄</label><input type="number" id="m-disp" value="1.00" step="0.01" min="0" oninput="calc()"></div>
           </div>
         </div>
@@ -402,9 +402,9 @@ tfoot td.l{text-align:left}
 
         <div class="master-sec-label">その他単価</div>
         <div class="master-grid">
-          <div class="master-item"><label>通常CK単価(円/m)</label><input type="number" id="mp-oth-ckNormal" min="0" step="10"></div>
-          <div class="master-item"><label>防火CK単価(円/m)</label><input type="number" id="mp-oth-ckFire" min="0" step="10"></div>
-          <div class="master-item"><label>CK剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
+          <div class="master-item"><label>通常コーキング単価(円/m)</label><input type="number" id="mp-oth-ckNormal" min="0" step="10"></div>
+          <div class="master-item"><label>防火コーキング単価(円/m)</label><input type="number" id="mp-oth-ckFire" min="0" step="10"></div>
+          <div class="master-item"><label>コーキング剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
           <div class="master-item"><label>廃棄代(円/枚)</label><input type="number" id="mp-oth-disposal" min="0" step="100"></div>
           <div class="master-item"><label>Yカガミ施工費(円/枚)</label><input type="number" id="mp-oth-mirrorLabor" min="0" step="100"></div>
         </div>
@@ -831,7 +831,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     h += '<th>No.</th><th>建具番号</th><th>寸法(mm)</th><th>品名</th><th>枚数</th><th>面積(m²)</th>';
     h += '<th>材料単価</th><th>材料原価</th><th>倍率</th><th>ガラス売価</th>';
     h += '<th>施工単価</th><th>施工工賃</th><th>取外代</th>';
-    h += '<th>CK m数</th><th>CK単価</th><th>CK費</th><th>剥単価</th><th>剥費</th>';
+    h += '<th>コーキングm数</th><th>コーキング単価</th><th>コーキング費</th><th>剥単価</th><th>剥費</th>';
     h += '<th>廃棄代</th><th>追加費用</th><th>行合計</th><th>粗利</th>';
     h += '</tr></thead><tbody>';
 
@@ -858,9 +858,9 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       h += '<td class="td-detail" data-label="施工単価">' + (c.mirror ? '(定額)' : fmt(c.cr)) + '</td>';
       h += '<td data-label="施工工賃">' + fmt(c.constructionBase) + '</td>';
       h += '<td data-label="取外代">' + fmt(c.removalCost) + '</td>';
-      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) + (d.caulkSide === 'single' ? ' 片面' : ' 両面') : '0.000') + '</td>';
-      h += '<td class="td-detail" data-label="CK単価">' + (d.fix === 'caulking' ? fmt(ckr_disp) : '—') + '</td>';
-      h += '<td data-label="CK費">' + fmt(c.caulkingCost) + '</td>';
+      h += '<td class="td-detail" data-label="コーキングm数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) + (d.caulkSide === 'single' ? ' 片面' : ' 両面') : '0.000') + '</td>';
+      h += '<td class="td-detail" data-label="コーキング単価">' + (d.fix === 'caulking' ? fmt(ckr_disp) : '—') + '</td>';
+      h += '<td data-label="コーキング費">' + fmt(c.caulkingCost) + '</td>';
       h += '<td class="td-detail" data-label="剥単価">' + (d.fix === 'caulking' && d.ckRemoval ? fmt(c.ckrRate) : '—') + '</td>';
       h += '<td data-label="剥費">' + (c.caulkingRemoval > 0 ? fmt(c.caulkingRemoval) : '0') + '</td>';
       h += '<td data-label="廃棄代">' + (c.disposalCost > 0 ? fmt(c.disposalCost) : '0') + '</td>';
@@ -909,7 +909,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     h += '<table><thead><tr>';
     h += '<th>品番</th><th>建具</th><th>種類</th><th>寸法(mm)</th><th>枚数</th>';
     h += '<th>総面積</th><th>ガラス</th><th>施工</th>';
-    h += '<th>CKm</th><th>CK</th><th>剥</th><th>廃棄</th><th>小計</th>';
+    h += '<th>コーキングm</th><th>コーキング</th><th>剥がし</th><th>廃棄</th><th>小計</th>';
     h += '</tr></thead><tbody>';
 
     for(var i = 0; i < rows; i++){
@@ -927,8 +927,8 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       h += '<td class="td-detail" data-label="総面積">' + fmtA(c.area * d.q) + '</td>';
       h += '<td data-label="ガラス金額">' + fmt(cd.glassPrice) + '</td>';
       h += '<td data-label="施工工賃">' + fmt(cd.constructionBase + cd.removalCost) + '</td>';
-      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '—') + '</td>';
-      h += '<td data-label="CK費">' + fmt(cd.caulkingCost) + '</td>';
+      h += '<td class="td-detail" data-label="コーキングm数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '—') + '</td>';
+      h += '<td data-label="コーキング費">' + fmt(cd.caulkingCost) + '</td>';
       h += '<td data-label="剥がし代">' + (cd.caulkingRemoval > 0 ? fmt(cd.caulkingRemoval) : '0') + '</td>';
       h += '<td data-label="廃棄代">' + (cd.disposalCost > 0 ? fmt(cd.disposalCost) : '0') + '</td>';
       h += '<td class="td-total" data-label="小計"><strong>' + fmt(rowT) + '</strong></td>';
