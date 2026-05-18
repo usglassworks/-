@@ -603,6 +603,7 @@ function getRowData(el){
     sellMult:    parseFloat((el.querySelector('.sell-mult')   ||{value:2.0}).value) || 2.0,
     constRate:   parseFloat((el.querySelector('.const-rate')  ||{value:''}).value) || 0,
     fix:         radio(el, 'fix' + id) || 'caulking',
+    caulkSide:   radio(el, 'cks' + id) || 'double',
     rem:         radio(el, 'rem' + id) === '1',
     fire:        radio(el, 'fir' + id) === '1',
     ckRemoval:   radio(el, 'ckr' + id) === '1',
@@ -662,7 +663,8 @@ function calcRow(d){
   var caulkingCost = 0, caulkingRemoval = 0, caulkMeters = 0;
   var ckrRate = 0;
   if(d.fix === 'caulking'){
-    caulkMeters = ((w + h) / 1000) * 4 * q;
+    var sideMultiplier = d.caulkSide === 'single' ? 2 : 4;
+    caulkMeters = ((w + h) / 1000) * sideMultiplier * q;
     var ckr = d.caulkRate > 0 ? d.caulkRate : (d.fire ? OTHER.ckFire : OTHER.ckNormal);
     caulkingCost = Math.round(caulkMeters * ckr);
     /* 剥がし代：「あり」の場合のみ計算 */
@@ -854,7 +856,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       h += '<td class="td-detail" data-label="施工単価">' + (c.mirror ? '(定額)' : fmt(c.cr)) + '</td>';
       h += '<td data-label="施工工賃">' + fmt(c.constructionBase) + '</td>';
       h += '<td data-label="取外代">' + fmt(c.removalCost) + '</td>';
-      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) : '0.000') + '</td>';
+      h += '<td class="td-detail" data-label="CK m数">' + (d.fix === 'caulking' ? fmtA(c.caulkMeters) + (d.caulkSide === 'single' ? ' 片面' : ' 両面') : '0.000') + '</td>';
       h += '<td class="td-detail" data-label="CK単価">' + (d.fix === 'caulking' ? fmt(ckr_disp) : '—') + '</td>';
       h += '<td data-label="CK費">' + fmt(c.caulkingCost) + '</td>';
       h += '<td class="td-detail" data-label="剥単価">' + (d.fix === 'caulking' && d.ckRemoval ? fmt(c.ckrRate) : '—') + '</td>';
@@ -1274,6 +1276,7 @@ function collectRowsData(){
       rem:        radio(card, 'rem' + id) || '0',
       fire:       radio(card, 'fir' + id) || '0',
       ckRemoval:  radio(card, 'ckr' + id) || '0',
+      caulkSide:  radio(card, 'cks' + id) || 'double',
       disposal:   radio(card, 'dsp' + id) || '0',
       caulkRate:  (card.querySelector('.caulk-rate')   || {value:''}).value,
       removalRate:(card.querySelector('.removal-rate') || {value:''}).value,
@@ -1404,6 +1407,7 @@ function applyRowData(card, row){
   setRadio('rem' + id, row.rem        || '0');
   setRadio('fir' + id, row.fire       || '0');
   setRadio('ckr' + id, row.ckRemoval  || '0');
+  setRadio('cks' + id, row.caulkSide  || 'double');
   setRadio('dsp' + id, row.disposal   || '0');
   updateRow(card);
 }
@@ -1672,6 +1676,12 @@ function addRow(){
               <div class="rrow">
                 <label><input type="radio" name="ckr${id}" value="0" checked onchange="calc()"> なし</label>
                 <label><input type="radio" name="ckr${id}" value="1" onchange="calc()"> あり（300円/m）</label>
+              </div>
+            </div>
+            <div class="fg"><span class="fglabel">コーキング面数</span>
+              <div class="rrow">
+                <label><input type="radio" name="cks${id}" value="double" checked onchange="calc()"> 両面</label>
+                <label><input type="radio" name="cks${id}" value="single" onchange="calc()"> 片面</label>
               </div>
             </div>
             <div class="fg"><span class="fglabel">コーキング単価 (円/m・空欄=自動)</span>
