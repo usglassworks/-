@@ -651,12 +651,14 @@ function calcRow(d){
   /* 施工 */
   var constructionBase, removalCost;
   if(mirror){
-    constructionBase = (OTHER.mirrorLabor || 0) * q;
-    removalCost = 0;
+    var mirrorBase = (OTHER.mirrorLabor || 0) * q;
+    constructionBase = mirrorBase;
+    removalCost = d.rem ? mirrorBase : 0;
   } else {
     var cr = d.constRate > 0 ? d.constRate : getRate(d.g);
-    constructionBase = Math.round(area * cr * q * 2);
-    removalCost      = d.rem ? Math.round(area * cr * q) : 0;
+    var baseLabor = Math.round(area * cr * q);
+    constructionBase = baseLabor;
+    removalCost = d.rem ? baseLabor : 0;
   }
 
   /* コーキング */
