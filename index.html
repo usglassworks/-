@@ -315,6 +315,12 @@ tfoot td.l{text-align:left}
           <input type="number" id="disc-amt" value="0" min="0" step="100" style="width:120px" oninput="calc()">
           <label style="font-size:12px;color:#888">円（税抜）</label>
         </div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:70px">標準売価倍率</label>
+          <input type="number" id="default-sell-mult" value="2.0" min="0" step="0.1" style="width:100px" oninput="saveDefaultSettings(); calc()">
+          <button type="button" class="btn-master-save" onclick="applyDefaultSellMultToAllRows()">全明細へ反映</button>
+          <label style="font-size:12px;color:#888">建築会社ごとの一律倍率</label>
+        </div>
         <div style="margin-top:10px">
           <div class="sblock-title" style="margin-bottom:6px">元請け用倍率</div>
           <div class="mult-grid">
@@ -1227,7 +1233,8 @@ function collectSettingsData(){
     miscMode:  globalRadio('miscMode') || 'auto',
     miscManual:(gv('misc-manual') || {value:''}).value,
     discName:  (gv('disc-name')   || {value:''}).value,
-    discAmt:   (gv('disc-amt')    || {value:''}).value,
+    discAmt:        (gv('disc-amt')          || {value:''}).value,
+    defaultSellMult:(gv('default-sell-mult') || {value:'2.0'}).value,
     mGlass:    (gv('m-glass')     || {value:''}).value,
     mConst:    (gv('m-const')     || {value:''}).value,
     mCaulk:    (gv('m-caulk')     || {value:''}).value,
@@ -1423,7 +1430,8 @@ function applyProjectData(data){
   setRadio('miscMode', s.miscMode || 'auto');
   if(gv('misc-manual')) gv('misc-manual').value = s.miscManual || 0;
   if(gv('disc-name'))   gv('disc-name').value   = s.discName   || '';
-  if(gv('disc-amt'))    gv('disc-amt').value     = s.discAmt    || 0;
+  if(gv('disc-amt'))         gv('disc-amt').value          = s.discAmt        || 0;
+  if(gv('default-sell-mult')) gv('default-sell-mult').value = s.defaultSellMult || 2.0;
   if(gv('m-glass'))     gv('m-glass').value      = s.mGlass     || 1.25;
   if(gv('m-const'))     gv('m-const').value      = s.mConst     || 1.75;
   if(gv('m-caulk'))     gv('m-caulk').value      = s.mCaulk     || 1.48;
@@ -1635,7 +1643,7 @@ function addRow(){
         <div class="csec-title">単価設定</div>
         <div class="fields">
           <div class="fg"><span class="fglabel">売価倍率</span>
-            <input type="number" class="sell-mult" value="2.0" min="0" step="0.1" oninput="calc()"></div>
+            <input type="number" class="sell-mult" value="${getDefaultSellMult()}" min="0" step="0.1" oninput="calc()"></div>
           <div class="fg"><span class="fglabel">施工単価 (空欄=マスター使用)</span>
             <input type="number" class="const-rate" placeholder="マスター値を使用" min="0" step="100" oninput="calc()"></div>
         </div>
@@ -1770,6 +1778,48 @@ function renderMasterPanel(){
   });
 }
 
+/* ══════════════════════════════════════════════
+   標準売価倍率
+══════════════════════════════════════════════ */
+function getDefaultSellMult(){
+  var el = gv('default-sell-mult');
+  var v = el ? parseFloat(el.value) : 2.0;
+  return (v > 0) ? v : 2.0;
+}
+
+function applyDefaultSellMultToAllRows(){
+  var mult = getDefaultSellMult();
+  document.querySelectorAll('.row-card .sell-mult').forEach(function(el){
+    el.value = mult;
+  });
+  calc();
+  alert('標準売価倍率 ' + mult + ' を全明細へ反映しました');
+}
+
+function applyDefaultSellMultToEmptyRows(){
+  var mult = getDefaultSellMult();
+  document.querySelectorAll('.row-card .sell-mult').forEach(function(el){
+    if(!el.value || parseFloat(el.value) <= 0){
+      el.value = mult;
+    }
+  });
+}
+
+function saveDefaultSettings(){
+  try {
+    localStorage.setItem('usglass_default_sell_mult', String(getDefaultSellMult()));
+  } catch(e){}
+}
+
+function loadDefaultSettings(){
+  try {
+    var v = localStorage.getItem('usglass_default_sell_mult');
+    if(v && gv('default-sell-mult')){
+      gv('default-sell-mult').value = v;
+    }
+  } catch(e){}
+}
+
 function loadMasterPrices(){
   try {
     var sGP  = localStorage.getItem('usglass_GP');
@@ -1885,6 +1935,7 @@ document.addEventListener('change', function(e){
    初期化
 ══════════════════════════════════════════════ */
 loadMasterPrices();
+loadDefaultSettings();
 addRow();
 renderMasterPanel();
 updateMasterWarning();
