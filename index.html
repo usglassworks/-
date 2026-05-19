@@ -1222,7 +1222,14 @@ function sendToManager(){
       pdfFileName:    pdfFileName
     };
 
-    localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(payload));
+    var handoff = [];
+    try {
+      var raw = localStorage.getItem('usGlassEstimateHandoff');
+      var parsed = JSON.parse(raw || '[]');
+      handoff = Array.isArray(parsed) ? parsed : [parsed];
+    } catch(e){ handoff = []; }
+    handoff.push(payload);
+    localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(handoff));
 
     var msg = '現場管理アプリへ送ります。\n\n'
             + '建築会社：' + (payload.companyName || '（未設定）') + '\n'
