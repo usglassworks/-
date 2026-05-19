@@ -150,6 +150,8 @@ tfoot td.l{text-align:left}
 .btn-preview:active{background:#0d4f7c}
 .btn-pdf{background:#c62828;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:100000;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-pdf:active{background:#b71c1c}
+.btn-send-manager{background:#2e7d32;color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:100000;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn-send-manager:active{background:#1b5e20}
 
 /* プレビューバー */
 #preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:100001;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:auto!important}
@@ -464,6 +466,7 @@ tfoot td.l{text-align:left}
     <button type="button" id="saveProjectBtn" class="btn-preview" onclick="saveProjectData()">案件を保存</button>
     <button type="button" id="loadProjectBtn" class="btn-preview" onclick="showSavedProjects()">案件を呼び出し</button>
     <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
+    <button type="button" id="sendToManagerBtn" class="btn-send-manager" onclick="sendToManager()">現場管理に送る</button>
     <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
 
@@ -519,6 +522,7 @@ var MIRRORS      = {'Yカガミ3':1,'Yカガミ5':1,'Yカガミ6':1};
 
 var viewMode = 'internal';
 var rid = 0;
+var _lastCalc = {};
 
 /* ══════════════════════════════════════════════
    ヘルパー
@@ -817,6 +821,15 @@ function calc(){
   renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q);
   renderSummary(totals, netAmt, quoteAmt, s, q);
   renderPrintSummary(totals, netAmt, quoteAmt, s, q);
+
+  _lastCalc = {
+    iGrand:    totals.iGrand,
+    iProfit:   totals.iProfit,
+    iSumMAT:   totals.iSumMAT,
+    cGrand:    totals.cGrand,
+    netAmt:    netAmt,
+    quoteAmt:  quoteAmt
+  };
 }
 
 /* ══════════════════════════════════════════════
@@ -1169,6 +1182,64 @@ async function printPDF(){
   }
 }
 
+/* ══════════════════════════════════════════════
+   現場管理アプリへのデータ連携
+══════════════════════════════════════════════ */
+var MANAGER_URL = 'https://usglassworks.github.io/us-glass-estimate-manager/';
+
+function sendToManager(){
+  try {
+    calc();
+
+    var isCustomer = viewMode === 'customer';
+    var pname      = (gv('pname')    || {value:''}).value || '';
+    var qAddr      = (gv('q-addr')   || {value:''}).value || '';
+    var qCase      = (gv('q-case')   || {value:''}).value || '';
+    var qNotes     = (gv('q-notes')  || {value:''}).value || '';
+    var qDate      = (gv('q-date')   || {value:''}).value || '';
+
+    var estimateAmount = isCustomer ? _lastCalc.quoteAmt : _lastCalc.iGrand;
+    var estimateType   = isCustomer ? '元請け用見積書' : '社内用見積書';
+
+    /* PDF想定ファイル名（本体は保存しない） */
+    var dateStr = qDate || new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
+    var safeName = (pname || qCase || '見積書').replace(/[\\/:*?"<>|]/g, '_');
+    var pdfFileName = dateStr + '_' + safeName + '_' + estimateType + '.pdf';
+
+    var now = new Date();
+    var id  = String(now.getTime());
+
+    var payload = {
+      id:             id,
+      createdAt:      now.toISOString(),
+      companyName:    qAddr  || '',
+      siteName:       pname  || qCase || '',
+      estimateType:   estimateType,
+      estimateAmount: estimateAmount || 0,
+      cost:           _lastCalc.iSumMAT || 0,
+      profit:         _lastCalc.iProfit || 0,
+      memo:           qNotes || '',
+      pdfFileName:    pdfFileName
+    };
+
+    localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(payload));
+
+    var msg = '現場管理アプリへ送ります。\n\n'
+            + '建築会社：' + (payload.companyName || '（未設定）') + '\n'
+            + '現場名：'   + (payload.siteName    || '（未設定）') + '\n'
+            + '見積金額：¥' + payload.estimateAmount.toLocaleString('ja-JP') + '\n'
+            + '種別：'     + payload.estimateType;
+
+    if(confirm(msg + '\n\n現場管理アプリを開きますか？')){
+      window.open(MANAGER_URL, '_blank');
+    }
+
+  } catch(e){
+    console.error('現場管理送信エラー:', e);
+    alert('送信でエラーが発生しました：' + (e.message || e));
+  }
+}
+
 function saveQuoteHTML(){
   calc();
 
@@ -1487,11 +1558,12 @@ function bindButtons(){
   safe('exitPreviewBtn', exitPreview);
   safe('masterSaveBtn',  saveMasterPrices);
   safe('masterResetBtn', resetMasterPrices);
-  safe('saveQuoteBtn',    saveQuoteHTML);
-  safe('saveProjectBtn',  saveProjectData);
-  safe('loadProjectBtn',  showSavedProjects);
-  safe('exportMasterBtn', exportMasterPrices);
-  safe('importMasterBtn', importMasterPrices);
+  safe('saveQuoteBtn',      saveQuoteHTML);
+  safe('saveProjectBtn',    saveProjectData);
+  safe('loadProjectBtn',    showSavedProjects);
+  safe('exportMasterBtn',   exportMasterPrices);
+  safe('importMasterBtn',   importMasterPrices);
+  safe('sendToManagerBtn',  sendToManager);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
