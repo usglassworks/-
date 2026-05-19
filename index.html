@@ -1192,18 +1192,34 @@ function sendToManager(){
     calc();
 
     var isCustomer = viewMode === 'customer';
-    var pname      = (gv('pname')    || {value:''}).value || '';
-    var qAddr      = (gv('q-addr')   || {value:''}).value || '';
-    var qCase      = (gv('q-case')   || {value:''}).value || '';
-    var qNotes     = (gv('q-notes')  || {value:''}).value || '';
-    var qDate      = (gv('q-date')   || {value:''}).value || '';
+    var pname      = (gv('pname')    || {value:''}).value.trim();
+    var qAddr      = (gv('q-addr')   || {value:''}).value.trim();
+    var qCase      = (gv('q-case')   || {value:''}).value.trim();
+    var qNotes     = (gv('q-notes')  || {value:''}).value.trim();
+    var qDate      = (gv('q-date')   || {value:''}).value.trim();
+
+    var companyName = qAddr;
+    var siteName    = pname || qCase;
+
+    /* ── バリデーション ── */
+    if(!companyName && !siteName){
+      alert('建築会社名と現場名を入力してください。\n\n・建築会社名：見積書設定の「宛名」\n・現場名：画面上部の「案件名」');
+      return;
+    }
+    if(!companyName){
+      alert('建築会社名を入力してください。\n（見積書設定の「宛名」欄）');
+      return;
+    }
+    if(!siteName){
+      alert('現場名を入力してください。\n（画面上部の「案件名」欄）');
+      return;
+    }
 
     var estimateAmount = isCustomer ? _lastCalc.quoteAmt : _lastCalc.iGrand;
     var estimateType   = isCustomer ? '元請け用見積書' : '社内用見積書';
 
-    /* PDF想定ファイル名（本体は保存しない） */
-    var dateStr = qDate || new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
-    var safeName = (pname || qCase || '見積書').replace(/[\\/:*?"<>|]/g, '_');
+    var dateStr  = qDate || new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
+    var safeName = siteName.replace(/[\\/:*?"<>|]/g, '_');
     var pdfFileName = dateStr + '_' + safeName + '_' + estimateType + '.pdf';
 
     var now = new Date();
@@ -1212,32 +1228,41 @@ function sendToManager(){
     var payload = {
       id:             id,
       createdAt:      now.toISOString(),
-      companyName:    qAddr  || '',
-      siteName:       pname  || qCase || '',
+      companyName:    companyName,
+      siteName:       siteName,
       estimateType:   estimateType,
       estimateAmount: estimateAmount || 0,
       cost:           _lastCalc.iSumMAT || 0,
       profit:         _lastCalc.iProfit || 0,
       memo:           qNotes || '',
-      pdfFileName:    pdfFileName
+      pdfFileName:    pdfFileName,
+      processed:      false
     };
+
+    /* ── 送信内容の確認ダイアログ ── */
+    var confirmMsg =
+        '【送信内容の確認】\n\n'
+      + '建築会社名：' + payload.companyName + '\n'
+      + '現場名　　：' + payload.siteName + '\n'
+      + '種別　　　：' + payload.estimateType + '\n'
+      + '見積金額　：¥' + payload.estimateAmount.toLocaleString('ja-JP') + '\n'
+      + '原価　　　：¥' + payload.cost.toLocaleString('ja-JP') + '\n'
+      + '粗利　　　：¥' + payload.profit.toLocaleString('ja-JP') + '\n'
+      + (payload.memo ? 'メモ　　　：' + payload.memo + '\n' : '')
+      + '\nこの内容で現場管理アプリへ送りますか？';
+
+    if(!confirm(confirmMsg)) return;
 
     var handoff = [];
     try {
-      var raw = localStorage.getItem('usGlassEstimateHandoff');
+      var raw    = localStorage.getItem('usGlassEstimateHandoff');
       var parsed = JSON.parse(raw || '[]');
       handoff = Array.isArray(parsed) ? parsed : [parsed];
     } catch(e){ handoff = []; }
     handoff.push(payload);
     localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(handoff));
 
-    var msg = '現場管理アプリへ送ります。\n\n'
-            + '建築会社：' + (payload.companyName || '（未設定）') + '\n'
-            + '現場名：'   + (payload.siteName    || '（未設定）') + '\n'
-            + '見積金額：¥' + payload.estimateAmount.toLocaleString('ja-JP') + '\n'
-            + '種別：'     + payload.estimateType;
-
-    if(confirm(msg + '\n\n現場管理アプリを開きますか？')){
+    if(confirm('送信しました。\n\n現場管理アプリを開きますか？')){
       window.open(MANAGER_URL, '_blank');
     }
 
