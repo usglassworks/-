@@ -152,6 +152,10 @@ tfoot td.l{text-align:left}
 .btn-pdf:active{background:#b71c1c}
 .btn-send-manager{background:#2e7d32;color:#fff;border:none;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:800;font-family:inherit;min-height:56px;position:relative;z-index:100000;pointer-events:auto!important;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-send-manager:active{background:#1b5e20}
+.handoff-bar{background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.handoff-bar .hb-label{font-size:12px;font-weight:800;color:#1b5e20;white-space:nowrap}
+.handoff-bar input{padding:10px 12px;border:1.5px solid #a5d6a7;border-radius:7px;font-size:15px;font-family:inherit;min-height:44px;flex:1;min-width:160px;-webkit-appearance:none;appearance:none}
+.handoff-bar input:focus{outline:none;border-color:#2e7d32}
 
 /* プレビューバー */
 #preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:100001;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:auto!important}
@@ -458,6 +462,13 @@ tfoot td.l{text-align:left}
   <div id="quote-summary-box" class="quote-box no-print" style="margin-bottom:14px;max-width:500px">
     <div class="quote-box-title">見積書サマリー</div>
     <div id="quote-summary-inner"></div>
+  </div>
+
+  <!-- 現場管理送信用入力欄 -->
+  <div class="handoff-bar no-print">
+    <span class="hb-label">現場管理に送る</span>
+    <input type="text" id="handoff-company" placeholder="建築会社名（必須）" oninput="calc()">
+    <input type="text" id="handoff-site"    placeholder="現場名（必須）" oninput="calc()">
   </div>
 
   <!-- アクションバー -->
@@ -1191,27 +1202,26 @@ function sendToManager(){
   try {
     calc();
 
-    var isCustomer = viewMode === 'customer';
-    var pname      = (gv('pname')    || {value:''}).value.trim();
-    var qAddr      = (gv('q-addr')   || {value:''}).value.trim();
-    var qCase      = (gv('q-case')   || {value:''}).value.trim();
-    var qNotes     = (gv('q-notes')  || {value:''}).value.trim();
-    var qDate      = (gv('q-date')   || {value:''}).value.trim();
-
-    var companyName = qAddr;
-    var siteName    = pname || qCase;
+    var isCustomer  = viewMode === 'customer';
+    var companyName = (gv('handoff-company') || {value:''}).value.trim();
+    var siteName    = (gv('handoff-site')    || {value:''}).value.trim();
+    var qNotes      = (gv('q-notes')         || {value:''}).value.trim();
+    var qDate       = (gv('q-date')          || {value:''}).value.trim();
 
     /* ── バリデーション ── */
     if(!companyName && !siteName){
-      alert('建築会社名と現場名を入力してください。\n\n・建築会社名：見積書設定の「宛名」\n・現場名：画面上部の「案件名」');
+      alert('建築会社名と現場名を入力してください。');
+      gv('handoff-company') && gv('handoff-company').focus();
       return;
     }
     if(!companyName){
-      alert('建築会社名を入力してください。\n（見積書設定の「宛名」欄）');
+      alert('建築会社名を入力してください。');
+      gv('handoff-company') && gv('handoff-company').focus();
       return;
     }
     if(!siteName){
-      alert('現場名を入力してください。\n（画面上部の「案件名」欄）');
+      alert('現場名を入力してください。');
+      gv('handoff-site') && gv('handoff-site').focus();
       return;
     }
 
