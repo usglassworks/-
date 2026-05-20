@@ -157,6 +157,16 @@ tfoot td.l{text-align:left}
 .handoff-bar input{padding:10px 12px;border:1.5px solid #a5d6a7;border-radius:7px;font-size:15px;font-family:inherit;min-height:44px;flex:1;min-width:160px;-webkit-appearance:none;appearance:none}
 .handoff-bar input:focus{outline:none;border-color:#2e7d32}
 
+/* Drive同期バー */
+.drive-sync-bar{background:#e8eaf6;border:1.5px solid #9fa8da;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.drive-sync-bar .ds-label{font-size:12px;font-weight:800;color:#283593;white-space:nowrap}
+.btn-drive{background:#3949ab;color:#fff;border:none;padding:10px 16px;border-radius:7px;font-size:13px;font-weight:800;font-family:inherit;min-height:44px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn-drive:active{background:#283593}
+.btn-drive.load{background:#6a1b9a}
+.btn-drive.load:active{background:#4a148c}
+.drive-sync-lbl{font-size:12px;color:#555;margin-left:auto}
+.sblock-full{grid-column:1/-1}
+
 /* プレビューバー */
 #preview-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:100001;background:#0d2b50;color:#fff;padding:12px 20px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:auto!important}
 #preview-bar span{font-weight:700;font-size:14px}
@@ -411,6 +421,22 @@ tfoot td.l{text-align:left}
         </div>
       </div>
 
+      <!-- Google Drive 同期設定 -->
+      <div class="sblock sblock-full">
+        <div class="sblock-title">Google Drive 同期設定</div>
+        <div class="srow">
+          <label style="font-weight:700;min-width:110px">Google Client ID</label>
+          <input type="text" id="google-client-id" style="flex:1;min-width:220px;font-size:13px;width:auto"
+            placeholder="xxxxxxxx.apps.googleusercontent.com" oninput="saveGoogleClientId()">
+        </div>
+        <div style="font-size:11px;color:#555;margin-top:6px;line-height:1.7;background:#f8f9ff;border-radius:6px;padding:8px 10px">
+          <strong>設定手順：</strong>
+          Google Cloud Console → APIとサービス → 認証情報 → OAuth 2.0クライアントIDを作成<br>
+          種類：<code>ウェブアプリケーション</code>　スコープ：<code>drive.file</code><br>
+          承認済みJavaScriptオリジンに <code>https://usglassworks.github.io</code> を追加してください。
+        </div>
+      </div>
+
       <!-- 単価マスター編集（全幅） -->
       <div class="sblock master-sblock" id="master-sblock">
         <div class="sblock-title">単価マスター編集</div>
@@ -492,6 +518,14 @@ tfoot td.l{text-align:left}
     <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
 
+  <!-- Drive同期バー -->
+  <div class="drive-sync-bar no-print">
+    <span class="ds-label">☁ Drive同期</span>
+    <button type="button" id="driveSaveBtn" class="btn-drive" onclick="syncToGoogleDrive()">Driveへ同期保存</button>
+    <button type="button" id="driveLoadBtn" class="btn-drive load" onclick="syncFromGoogleDrive()">Driveから同期読み込み</button>
+    <span id="drive-sync-label" class="drive-sync-lbl">未同期</span>
+  </div>
+
 </div><!-- /.app -->
 
 <!-- 案件保存モーダル -->
@@ -507,6 +541,7 @@ tfoot td.l{text-align:left}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 'use strict';
 
@@ -547,6 +582,14 @@ var rid = 0;
 var _lastCalc = {};
 var currentProjectId = null;
 var isSaving = false;
+
+/* Drive sync */
+var DRIVE_FOLDER_NAME    = 'US_GLASS_見積管理';
+var DRIVE_SUBFOLDER_NAME = '_data';
+var DRIVE_FILE_NAME      = 'estimate_tool_data.json';
+var _driveAccessToken    = null;
+var _driveTokenClient    = null;
+var _driveLastClientId   = null;
 
 /* ══════════════════════════════════════════════
    ヘルパー
@@ -2197,6 +2240,249 @@ function importMasterPrices(){
 }
 
 /* ══════════════════════════════════════════════
+   Google Drive 同期
+══════════════════════════════════════════════ */
+function getGoogleClientId(){
+  return (gv('google-client-id') || {value:''}).value.trim();
+}
+
+function saveGoogleClientId(){
+  localStorage.setItem('usglass_google_client_id', getGoogleClientId());
+}
+
+function loadGoogleClientId(){
+  var saved = localStorage.getItem('usglass_google_client_id') || '';
+  var el = gv('google-client-id');
+  if(el && saved) el.value = saved;
+}
+
+function updateDriveSyncLabel(){
+  var el = gv('drive-sync-label');
+  if(!el) return;
+  var lastSync = localStorage.getItem('usglass_last_drive_sync');
+  if(lastSync){
+    try {
+      var d = new Date(lastSync);
+      el.textContent = '最終同期：' + d.getFullYear() + '-' +
+        String(d.getMonth()+1).padStart(2,'0') + '-' +
+        String(d.getDate()).padStart(2,'0') + ' ' +
+        String(d.getHours()).padStart(2,'0') + ':' +
+        String(d.getMinutes()).padStart(2,'0');
+    } catch(e){ el.textContent = '未同期'; }
+  } else {
+    el.textContent = '未同期';
+  }
+}
+
+function _getOrInitTokenClient(){
+  if(typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2){
+    throw new Error('Google認証ライブラリが読み込まれていません。\nしばらく待ってからページを再読み込みしてください。');
+  }
+  var clientId = getGoogleClientId();
+  if(!clientId){
+    throw new Error('Google Client IDが未設定です。\n設定パネルの「Google Drive 同期設定」にClient IDを入力してください。');
+  }
+  if(!_driveTokenClient || _driveLastClientId !== clientId){
+    _driveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: ''
+    });
+    _driveLastClientId = clientId;
+    _driveAccessToken  = null;
+  }
+  return _driveTokenClient;
+}
+
+function _requestDriveToken(){
+  return new Promise(function(resolve, reject){
+    try {
+      var tc = _getOrInitTokenClient();
+      tc.callback = function(resp){
+        if(resp.error){
+          reject(new Error('認証エラー: ' + resp.error +
+            (resp.error_description ? '\n' + resp.error_description : '')));
+          return;
+        }
+        _driveAccessToken = resp.access_token;
+        resolve(resp.access_token);
+      };
+      tc.requestAccessToken();
+    } catch(e){ reject(e); }
+  });
+}
+
+async function _driveReq(url, opts){
+  var token = _driveAccessToken || await _requestDriveToken();
+  opts = opts || {};
+  opts.headers = Object.assign({'Authorization': 'Bearer ' + token}, opts.headers || {});
+  var resp = await fetch(url, opts);
+  if(resp.status === 401){
+    _driveAccessToken = null;
+    token = await _requestDriveToken();
+    opts.headers['Authorization'] = 'Bearer ' + token;
+    resp = await fetch(url, opts);
+  }
+  return resp;
+}
+
+async function _driveFindItem(name, mimeType, parentId){
+  var parts = ["name='" + name.replace(/'/g,"\\'") + "'", 'trashed=false'];
+  if(mimeType) parts.push("mimeType='" + mimeType + "'");
+  if(parentId) parts.push("'" + parentId + "' in parents");
+  var resp = await _driveReq(
+    'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(parts.join(' and ')) +
+    '&fields=files(id,name)&spaces=drive');
+  if(!resp.ok){
+    var txt = await resp.text();
+    throw new Error('Drive検索エラー (' + resp.status + '): ' + txt);
+  }
+  var data = await resp.json();
+  return (data.files && data.files.length > 0) ? data.files[0].id : null;
+}
+
+async function _driveCreateFolder(name, parentId){
+  var meta = {name:name, mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) meta.parents = [parentId];
+  var resp = await _driveReq('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(meta)
+  });
+  if(!resp.ok){ var txt = await resp.text(); throw new Error('フォルダ作成エラー (' + resp.status + '): ' + txt); }
+  return (await resp.json()).id;
+}
+
+async function _driveFindOrCreateFolder(name, parentId){
+  var id = await _driveFindItem(name, 'application/vnd.google-apps.folder', parentId);
+  if(!id) id = await _driveCreateFolder(name, parentId);
+  return id;
+}
+
+async function _driveUploadNew(name, folderId, jsonStr){
+  var meta = {name:name, mimeType:'application/json', parents:[folderId]};
+  var form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], {type:'application/json'}));
+  form.append('file',     new Blob([jsonStr],              {type:'application/json'}));
+  var token = _driveAccessToken || await _requestDriveToken();
+  var resp = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+    {method:'POST', headers:{'Authorization':'Bearer '+token}, body:form});
+  if(resp.status === 401){
+    _driveAccessToken = null; token = await _requestDriveToken();
+    resp = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      {method:'POST', headers:{'Authorization':'Bearer '+token}, body:form});
+  }
+  if(!resp.ok){ var txt = await resp.text(); throw new Error('ファイル作成エラー (' + resp.status + '): ' + txt); }
+  return (await resp.json()).id;
+}
+
+async function _driveUpdateContent(fileId, jsonStr){
+  var resp = await _driveReq(
+    'https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media&fields=id',
+    {method:'PATCH', headers:{'Content-Type':'application/json'}, body:jsonStr});
+  if(!resp.ok){ var txt = await resp.text(); throw new Error('ファイル更新エラー (' + resp.status + '): ' + txt); }
+}
+
+async function _driveReadContent(fileId){
+  var resp = await _driveReq('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media');
+  if(!resp.ok){ throw new Error('ファイル読込エラー (' + resp.status + ')'); }
+  return await resp.text();
+}
+
+async function syncToGoogleDrive(){
+  var btn = gv('driveSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '保存中...'; }
+  try {
+    var projects = [];
+    try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){}
+
+    var syncData = {
+      version: 1,
+      lastSyncedAt: new Date().toISOString(),
+      projects: projects,
+      masterPrices: {
+        GP:    JSON.parse(localStorage.getItem('usglass_GP')    || 'null'),
+        CR:    JSON.parse(localStorage.getItem('usglass_CR')    || 'null'),
+        OTHER: JSON.parse(localStorage.getItem('usglass_OTHER') || 'null')
+      },
+      defaultSellMult: localStorage.getItem('usglass_default_sell_mult') || ''
+    };
+    var content = JSON.stringify(syncData, null, 2);
+
+    var rootId   = await _driveFindOrCreateFolder(DRIVE_FOLDER_NAME,    null);
+    var dataId   = await _driveFindOrCreateFolder(DRIVE_SUBFOLDER_NAME, rootId);
+    var fileId   = await _driveFindItem(DRIVE_FILE_NAME, null, dataId);
+
+    if(fileId){
+      await _driveUpdateContent(fileId, content);
+    } else {
+      await _driveUploadNew(DRIVE_FILE_NAME, dataId, content);
+    }
+
+    localStorage.setItem('usglass_last_drive_sync', new Date().toISOString());
+    updateDriveSyncLabel();
+    alert('Google Driveへの同期保存が完了しました。\n案件数：' + projects.length + '件');
+  } catch(e){
+    console.error('Drive同期保存エラー:', e);
+    alert('Drive同期保存でエラーが発生しました：\n' + (e.message || e));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Driveへ同期保存'; }
+  }
+}
+
+async function syncFromGoogleDrive(){
+  var btn = gv('driveLoadBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '読み込み中...'; }
+  try {
+    if(!confirm('Drive上のデータでこの端末のデータを上書きします。よろしいですか？\n\n※ この端末の案件データは Drive のデータで置き換えられます。')) return;
+
+    var rootId = await _driveFindItem(DRIVE_FOLDER_NAME, 'application/vnd.google-apps.folder', null);
+    if(!rootId){ alert('Drive上に同期データが見つかりません。\nまず別の端末で「Driveへ同期保存」を行ってください。'); return; }
+
+    var dataId = await _driveFindItem(DRIVE_SUBFOLDER_NAME, 'application/vnd.google-apps.folder', rootId);
+    if(!dataId){ alert('Drive上に同期データが見つかりません。'); return; }
+
+    var fileId = await _driveFindItem(DRIVE_FILE_NAME, null, dataId);
+    if(!fileId){ alert('Drive上にデータファイルが見つかりません。\nまず「Driveへ同期保存」を行ってください。'); return; }
+
+    var content  = await _driveReadContent(fileId);
+    var syncData = JSON.parse(content);
+
+    if(syncData.projects){
+      localStorage.setItem('usglass_projects', JSON.stringify(syncData.projects));
+    }
+    if(syncData.masterPrices){
+      if(syncData.masterPrices.GP    != null) localStorage.setItem('usglass_GP',    JSON.stringify(syncData.masterPrices.GP));
+      if(syncData.masterPrices.CR    != null) localStorage.setItem('usglass_CR',    JSON.stringify(syncData.masterPrices.CR));
+      if(syncData.masterPrices.OTHER != null) localStorage.setItem('usglass_OTHER', JSON.stringify(syncData.masterPrices.OTHER));
+    }
+    if(syncData.defaultSellMult != null){
+      localStorage.setItem('usglass_default_sell_mult', syncData.defaultSellMult);
+    }
+
+    localStorage.setItem('usglass_last_drive_sync', new Date().toISOString());
+    updateDriveSyncLabel();
+
+    loadMasterPrices();
+    loadDefaultSettings();
+
+    var driveDate = syncData.lastSyncedAt
+      ? new Date(syncData.lastSyncedAt).toLocaleString('ja-JP') : '不明';
+    alert('Google Driveからの同期読み込みが完了しました。\n\n' +
+      'Drive保存日時：' + driveDate + '\n' +
+      '案件数：' + (syncData.projects ? syncData.projects.length : 0) + '件\n\n' +
+      '案件一覧を確認するには「案件を呼び出し」を押してください。');
+  } catch(e){
+    console.error('Drive同期読み込みエラー:', e);
+    alert('Drive同期読み込みでエラーが発生しました：\n' + (e.message || e));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Driveから同期読み込み'; }
+  }
+}
+
+/* ══════════════════════════════════════════════
    設定パネルのラジオ変更検知
 ══════════════════════════════════════════════ */
 document.addEventListener('change', function(e){
@@ -2208,6 +2494,8 @@ document.addEventListener('change', function(e){
 ══════════════════════════════════════════════ */
 loadMasterPrices();
 loadDefaultSettings();
+loadGoogleClientId();
+updateDriveSyncLabel();
 addRow();
 renderMasterPanel();
 updateMasterWarning();
