@@ -2221,21 +2221,145 @@ function showMasterExportText(text){
 
 function importMasterPrices(){
   try {
-    var text = prompt('単価マスターJSONを貼り付けてください');
-    if(!text) return;
-    var data = JSON.parse(text);
-    if(data.GP)    GP    = Object.assign({}, DEFAULT_GP,    data.GP);
-    if(data.CR)    CR    = Object.assign({}, DEFAULT_CR,    data.CR);
-    if(data.OTHER) OTHER = Object.assign({}, DEFAULT_OTHER, data.OTHER);
+    var text = prompt(
+      '単価マスターJSONを貼り付けてください\n\n' +
+      '対応形式：\n' +
+      '① {GP:{...},CR:{...},OTHER:{...}}  (書き出し形式)\n' +
+      '② {glassPrices:{...},laborPrices:{...},caulkingPrices:{...}}\n' +
+      '③ {"FL5":1710,"FL6":2130,...}  (フラット形式→ガラス単価GP)');
+    if(!text || !text.trim()) return;
+
+    var data = JSON.parse(text.trim());
+
+    var OTH_KEYS = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'];
+    var gpCount = 0, crCount = 0, othCount = 0;
+    var gpLog = {}, crLog = {}, othLog = {};
+
+    function applyToGP(src){
+      if(!src || typeof src !== 'object') return;
+      GP_KEYS.forEach(function(k){
+        if(src[k] !== undefined && src[k] !== null){
+          GP[k] = parseFloat(src[k]) || 0;
+          gpLog[k] = GP[k]; gpCount++;
+        }
+      });
+    }
+    function applyToCR(src){
+      if(!src || typeof src !== 'object') return;
+      CR_KEYS.forEach(function(k){
+        if(src[k] !== undefined && src[k] !== null){
+          CR[k] = parseFloat(src[k]) || 0;
+          crLog[k] = CR[k]; crCount++;
+        }
+      });
+    }
+    function applyToOTH(src){
+      if(!src || typeof src !== 'object') return;
+      OTH_KEYS.forEach(function(k){
+        if(src[k] !== undefined && src[k] !== null){
+          OTHER[k] = parseFloat(src[k]) || 0;
+          othLog[k] = OTHER[k]; othCount++;
+        }
+      });
+    }
+
+    /* 形式の自動判定 */
+    var hasGP    = data.GP    != null;
+    var hasCR    = data.CR    != null;
+    var hasOTH   = data.OTHER != null;
+    var hasGlass = data.glassPrices   != null;
+    var hasLabor = data.laborPrices   != null;
+    var hasCaulk = data.caulkingPrices != null;
+
+    if(hasGP || hasCR || hasOTH){
+      /* ① 書き出し形式: {GP:{...}, CR:{...}, OTHER:{...}} */
+      if(hasGP)  applyToGP(data.GP);
+      if(hasCR)  applyToCR(data.CR);
+      if(hasOTH) applyToOTH(data.OTHER);
+    } else if(hasGlass || hasLabor || hasCaulk){
+      /* ② 分類形式: {glassPrices:{...}, laborPrices:{...}, caulkingPrices:{...}} */
+      if(hasGlass) applyToGP(data.glassPrices);
+      if(hasLabor) applyToCR(data.laborPrices);
+      if(hasCaulk) applyToOTH(data.caulkingPrices);
+    } else {
+      /* ③ フラット形式: {"FL5":1710,...} — GP優先、OTHER_KEYS も検索 */
+      applyToGP(data);
+      /* CR は GP と重複しないキーのみ (通常 CR_KEYS ⊆ GP_KEYS なのでスキップされる) */
+      CR_KEYS.forEach(function(k){
+        if(data[k] !== undefined && gpLog[k] === undefined){
+          CR[k] = parseFloat(data[k]) || 0;
+          crLog[k] = CR[k]; crCount++;
+        }
+      });
+      applyToOTH(data);
+    }
+
+    /* 追加: settings キーから 倍率 / 売価倍率 を反映 */
+    var sett = data.settings || data.options || {};
+    var settCount = 0;
+    var settMap = {
+      defaultSellMult: 'default-sell-mult',
+      mGlass: 'm-glass', mConst: 'm-const',
+      mCaulk: 'm-caulk', mRemov: 'm-remov', mDisp: 'm-disp'
+    };
+    Object.keys(settMap).forEach(function(k){
+      if(sett[k] !== undefined){
+        var el = gv(settMap[k]);
+        if(el){ el.value = parseFloat(sett[k]) || 0; settCount++; }
+      }
+    });
+    if(sett.defaultSellMult) saveDefaultSettings();
+
+    var total = gpCount + crCount + othCount + settCount;
+    if(total === 0){
+      alert(
+        'JSONは読み込めましたが、反映できる単価項目がありませんでした。\n' +
+        'JSONのキー名を確認してください。\n\n' +
+        '対応キー例：\n' +
+        '・ガラス単価 (GP)：FL5, FL6, FL8, FL10, FL12, F6, Fw, pw, ...\n' +
+        '・施工工賃 (CR)：FL5, FL6, FL8, F6, Fw, ...\n' +
+        '・その他：ckNormal, ckFire, ckRemoval, disposal, mirrorLabor'
+      );
+      return;
+    }
+
+    /* localStorage 保存 */
     localStorage.setItem('usglass_GP',    JSON.stringify(GP));
     localStorage.setItem('usglass_CR',    JSON.stringify(CR));
     localStorage.setItem('usglass_OTHER', JSON.stringify(OTHER));
+
+    /* UI 更新・再計算 */
     renderMasterPanel();
     updateMasterWarning();
     calc();
-    alert('単価マスターを読み込みました');
+
+    /* 結果メッセージ */
+    var msg = '価格JSONを読み込みました。\n\n';
+    if(gpCount > 0){
+      msg += 'ガラス単価：' + gpCount + '件を反映\n';
+      var gpKeys = Object.keys(gpLog).slice(0, 4);
+      gpKeys.forEach(function(k){ msg += '  ' + k + '：' + gpLog[k].toLocaleString('ja-JP') + '円/m²\n'; });
+      if(gpCount > 4) msg += '  …他 ' + (gpCount - 4) + '件\n';
+    }
+    if(crCount > 0){
+      msg += '施工工賃：' + crCount + '件を反映\n';
+      var crKeys = Object.keys(crLog).slice(0, 3);
+      crKeys.forEach(function(k){ msg += '  ' + k + '：' + crLog[k].toLocaleString('ja-JP') + '円/m²\n'; });
+    }
+    if(othCount > 0){
+      msg += 'その他単価：' + othCount + '件を反映\n';
+      Object.keys(othLog).forEach(function(k){ msg += '  ' + k + '：' + othLog[k].toLocaleString('ja-JP') + '\n'; });
+    }
+    if(settCount > 0) msg += '設定倍率：' + settCount + '件を反映\n';
+    msg += '\n現在の明細を再計算しました。';
+    alert(msg);
+
   } catch(e){
-    alert('単価マスターの読み込みに失敗しました：' + (e.message || e));
+    if(e instanceof SyntaxError){
+      alert('JSONの形式が正しくありません。\n\nエラー：' + e.message + '\n\nダブルクォートの使用・末尾カンマの有無を確認してください。');
+    } else {
+      alert('単価マスターの読み込みに失敗しました：' + (e.message || e));
+    }
   }
 }
 
