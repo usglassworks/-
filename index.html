@@ -464,6 +464,7 @@ tfoot td.l{text-align:left}
           <div class="master-item"><label>コーキング剥がし単価(円/m)</label><input type="number" id="mp-oth-ckRemoval" min="0" step="10"></div>
           <div class="master-item"><label>廃棄代(円/枚)</label><input type="number" id="mp-oth-disposal" min="0" step="100"></div>
           <div class="master-item"><label>Yカガミ施工費(円/枚)</label><input type="number" id="mp-oth-mirrorLabor" min="0" step="100"></div>
+          <div class="master-item"><label>戸車交換代(円/枚)</label><input type="number" id="mp-oth-doorPulley" min="0" step="100"></div>
         </div>
 
         <div class="master-btn-row">
@@ -578,7 +579,7 @@ var DEFAULT_CR = {
   'スリガラス3':0,'スリガラス5':0,'スリガラス6':0
 };
 
-var DEFAULT_OTHER = {ckNormal:0, ckFire:0, ckRemoval:0, disposal:0, mirrorLabor:0};
+var DEFAULT_OTHER = {ckNormal:0, ckFire:0, ckRemoval:0, disposal:0, mirrorLabor:0, doorPulley:0};
 
 var GP    = Object.assign({}, DEFAULT_GP);
 var CR    = Object.assign({}, DEFAULT_CR);
@@ -2096,7 +2097,7 @@ function renderMasterPanel(){
       '</div>';
   }).join('');
 
-  var oth = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'];
+  var oth = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor','doorPulley'];
   oth.forEach(function(k){
     var el = gv('mp-oth-' + k);
     if(el) el.value = OTHER[k] || 0;
@@ -2165,7 +2166,7 @@ function readMasterInputs(){
     var el = gv('mp-cr-' + k);
     if(el) CR[k] = parseFloat(el.value) || 0;
   });
-  ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'].forEach(function(k){
+  ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor','doorPulley'].forEach(function(k){
     var el = gv('mp-oth-' + k);
     if(el) OTHER[k] = parseFloat(el.value) || 0;
   });
@@ -2235,15 +2236,27 @@ function importMasterPrices(){
       '単価マスターJSONを貼り付けてください\n\n' +
       '対応形式：\n' +
       '① {GP:{...},CR:{...},OTHER:{...}}  (書き出し形式)\n' +
-      '② {glassPrices:{...},laborPrices:{...},caulkingPrices:{...}}\n' +
+      '② {glassPrices:{...},laborPrices:{...},caulkingPrices:{...},otherPrices:{...}}\n' +
       '③ {"FL5":1710,"FL6":2130,...}  (フラット形式→ガラス単価GP)');
     if(!text || !text.trim()) return;
 
     var data = JSON.parse(text.trim());
 
-    var OTH_KEYS = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor'];
+    var OTH_KEYS = ['ckNormal','ckFire','ckRemoval','disposal','mirrorLabor','doorPulley'];
     var gpCount = 0, crCount = 0, othCount = 0;
     var gpLog = {}, crLog = {}, othLog = {};
+
+    /* 日本語キー→英語キー マッピング */
+    var CK_JP_MAP = {
+      '通常コーキング単価': 'ckNormal',
+      '防火コーキング単価': 'ckFire',
+      'コーキング剥がし単価': 'ckRemoval'
+    };
+    var OTH_JP_MAP = {
+      '廃棄代': 'disposal',
+      'Yカガミ施工費': 'mirrorLabor',
+      '戸車交換代': 'doorPulley'
+    };
 
     function applyToGP(src){
       if(!src || typeof src !== 'object') return;
@@ -2265,10 +2278,27 @@ function importMasterPrices(){
     }
     function applyToOTH(src){
       if(!src || typeof src !== 'object') return;
+      /* 英語キー直接 */
       OTH_KEYS.forEach(function(k){
         if(src[k] !== undefined && src[k] !== null){
           OTHER[k] = parseFloat(src[k]) || 0;
           othLog[k] = OTHER[k]; othCount++;
+        }
+      });
+      /* 日本語キー (caulkingPrices 側) */
+      Object.keys(CK_JP_MAP).forEach(function(jp){
+        var en = CK_JP_MAP[jp];
+        if(src[jp] !== undefined && src[jp] !== null && othLog[en] === undefined){
+          OTHER[en] = parseFloat(src[jp]) || 0;
+          othLog[en] = OTHER[en]; othCount++;
+        }
+      });
+      /* 日本語キー (otherPrices 側) */
+      Object.keys(OTH_JP_MAP).forEach(function(jp){
+        var en = OTH_JP_MAP[jp];
+        if(src[jp] !== undefined && src[jp] !== null && othLog[en] === undefined){
+          OTHER[en] = parseFloat(src[jp]) || 0;
+          othLog[en] = OTHER[en]; othCount++;
         }
       });
     }
@@ -2277,24 +2307,25 @@ function importMasterPrices(){
     var hasGP    = data.GP    != null;
     var hasCR    = data.CR    != null;
     var hasOTH   = data.OTHER != null;
-    var hasGlass = data.glassPrices   != null;
-    var hasLabor = data.laborPrices   != null;
+    var hasGlass = data.glassPrices    != null;
+    var hasLabor = data.laborPrices    != null;
     var hasCaulk = data.caulkingPrices != null;
+    var hasOther = data.otherPrices    != null;
 
     if(hasGP || hasCR || hasOTH){
       /* ① 書き出し形式: {GP:{...}, CR:{...}, OTHER:{...}} */
       if(hasGP)  applyToGP(data.GP);
       if(hasCR)  applyToCR(data.CR);
       if(hasOTH) applyToOTH(data.OTHER);
-    } else if(hasGlass || hasLabor || hasCaulk){
-      /* ② 分類形式: {glassPrices:{...}, laborPrices:{...}, caulkingPrices:{...}} */
+    } else if(hasGlass || hasLabor || hasCaulk || hasOther){
+      /* ② 分類形式: {glassPrices:{...}, laborPrices:{...}, caulkingPrices:{...}, otherPrices:{...}} */
       if(hasGlass) applyToGP(data.glassPrices);
       if(hasLabor) applyToCR(data.laborPrices);
       if(hasCaulk) applyToOTH(data.caulkingPrices);
+      if(hasOther) applyToOTH(data.otherPrices);
     } else {
       /* ③ フラット形式: {"FL5":1710,...} — GP優先、OTHER_KEYS も検索 */
       applyToGP(data);
-      /* CR は GP と重複しないキーのみ (通常 CR_KEYS ⊆ GP_KEYS なのでスキップされる) */
       CR_KEYS.forEach(function(k){
         if(data[k] !== undefined && gpLog[k] === undefined){
           CR[k] = parseFloat(data[k]) || 0;
@@ -2304,31 +2335,83 @@ function importMasterPrices(){
       applyToOTH(data);
     }
 
-    /* 追加: settings キーから 倍率 / 売価倍率 を反映 */
+    /* settings / options から 倍率・売価倍率・OTHER項目 を反映 */
     var sett = data.settings || data.options || {};
     var settCount = 0;
+
     var settMap = {
       defaultSellMult: 'default-sell-mult',
       mGlass: 'm-glass', mConst: 'm-const',
       mCaulk: 'm-caulk', mRemov: 'm-remov', mDisp: 'm-disp'
     };
-    Object.keys(settMap).forEach(function(k){
-      if(sett[k] !== undefined){
-        var el = gv(settMap[k]);
-        if(el){ el.value = parseFloat(sett[k]) || 0; settCount++; }
+    /* 日本語設定キー→input id */
+    var settJpMap = {
+      '標準売価倍率':     'default-sell-mult',
+      'ガラス元請倍率':   'm-glass',
+      '施工元請倍率':     'm-const',
+      'コーキング元請倍率':'m-caulk',
+      '撤去元請倍率':     'm-remov',
+      '廃棄元請倍率':     'm-disp'
+    };
+    function applySett(src){
+      if(!src || typeof src !== 'object') return;
+      Object.keys(settMap).forEach(function(k){
+        if(src[k] !== undefined){
+          var el = gv(settMap[k]);
+          if(el){ el.value = parseFloat(src[k]) || 0; settCount++; }
+        }
+      });
+      Object.keys(settJpMap).forEach(function(jp){
+        if(src[jp] !== undefined && gv(settJpMap[jp])){
+          var el = gv(settJpMap[jp]);
+          if(el.value == 0 || el.value === ''){ el.value = parseFloat(src[jp]) || 0; settCount++; }
+        }
+      });
+    }
+    applySett(sett);
+
+    /* repairSettings → disposal, laborMultiplier など */
+    var rep = data.repairSettings || {};
+    if(rep.disposalPerPiece !== undefined && othLog['disposal'] === undefined){
+      OTHER['disposal'] = parseFloat(rep.disposalPerPiece) || 0;
+      othLog['disposal'] = OTHER['disposal']; othCount++;
+    }
+    if(rep.laborMultiplier !== undefined){
+      var elLM = gv('m-const');
+      if(elLM && (!elLM.value || elLM.value == 0)){ elLM.value = parseFloat(rep.laborMultiplier) || 0; settCount++; }
+    }
+    /* miscExpense など数値フィールドは将来のための記録のみ（対応UIなし） */
+
+    /* primeContractorMultipliers → m-glass, m-const, m-caulk */
+    var pcm = data.primeContractorMultipliers || {};
+    var pcmMap = { glass:'m-glass', labor:'m-const', caulking:'m-caulk', removal:'m-remov', disposal:'m-disp' };
+    Object.keys(pcmMap).forEach(function(k){
+      if(pcm[k] !== undefined){
+        var el = gv(pcmMap[k]);
+        if(el && (!el.value || el.value == 0)){ el.value = parseFloat(pcm[k]) || 0; settCount++; }
       }
     });
+
+    /* caulkingMaterialSettings → ck-unit-price, ck-coverage */
+    var cms = data.caulkingMaterialSettings || {};
+    var cmsCount = 0;
+    if(cms.pricePerTube !== undefined){ var elP = gv('ck-unit-price'); if(elP){ elP.value = parseFloat(cms.pricePerTube) || 0; cmsCount++; } }
+    if(cms.meterPerTube !== undefined){ var elC = gv('ck-coverage');   if(elC){ elC.value = parseFloat(cms.meterPerTube)  || 0; cmsCount++; } }
+
     if(sett.defaultSellMult) saveDefaultSettings();
 
-    var total = gpCount + crCount + othCount + settCount;
+    var total = gpCount + crCount + othCount + settCount + cmsCount;
     if(total === 0){
       alert(
         'JSONは読み込めましたが、反映できる単価項目がありませんでした。\n' +
         'JSONのキー名を確認してください。\n\n' +
         '対応キー例：\n' +
-        '・ガラス単価 (GP)：FL5, FL6, FL8, FL10, FL12, F6, Fw, pw, ...\n' +
-        '・施工工賃 (CR)：FL5, FL6, FL8, F6, Fw, ...\n' +
-        '・その他：ckNormal, ckFire, ckRemoval, disposal, mirrorLabor'
+        '・ガラス単価 (GP / glassPrices)：FL5, FL6, FL8, ...\n' +
+        '・施工工賃 (CR / laborPrices)：FL5, FL6, FL8, ...\n' +
+        '・コーキング (caulkingPrices)：通常コーキング単価, 防火コーキング単価, コーキング剥がし単価\n' +
+        '・その他 (otherPrices / OTHER)：廃棄代, Yカガミ施工費, 戸車交換代\n' +
+        '・caulkingMaterialSettings：pricePerTube, meterPerTube\n' +
+        '・primeContractorMultipliers：glass, labor, caulking'
       );
       return;
     }
@@ -2344,6 +2427,10 @@ function importMasterPrices(){
     calc();
 
     /* 結果メッセージ */
+    var othLabelMap = {
+      ckNormal:'通常コーキング', ckFire:'防火コーキング', ckRemoval:'コーキング剥がし',
+      disposal:'廃棄代', mirrorLabor:'Yカガミ施工費', doorPulley:'戸車交換代'
+    };
     var msg = '価格JSONを読み込みました。\n\n';
     if(gpCount > 0){
       msg += 'ガラス単価：' + gpCount + '件を反映\n';
@@ -2357,10 +2444,14 @@ function importMasterPrices(){
       crKeys.forEach(function(k){ msg += '  ' + k + '：' + crLog[k].toLocaleString('ja-JP') + '円/m²\n'; });
     }
     if(othCount > 0){
-      msg += 'その他単価：' + othCount + '件を反映\n';
-      Object.keys(othLog).forEach(function(k){ msg += '  ' + k + '：' + othLog[k].toLocaleString('ja-JP') + '\n'; });
+      msg += 'コーキング・その他単価：' + othCount + '件を反映\n';
+      Object.keys(othLog).forEach(function(k){
+        var lbl = othLabelMap[k] || k;
+        msg += '  ' + lbl + '：' + othLog[k].toLocaleString('ja-JP') + '\n';
+      });
     }
-    if(settCount > 0) msg += '設定倍率：' + settCount + '件を反映\n';
+    if(cmsCount > 0) msg += 'コーキング材料設定：' + cmsCount + '件を反映\n';
+    if(settCount > 0) msg += '設定・倍率：' + settCount + '件を反映\n';
     msg += '\n現在の明細を再計算しました。';
     alert(msg);
 
