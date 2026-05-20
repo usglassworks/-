@@ -453,9 +453,10 @@ tfoot td.l{text-align:left}
       <div class="amt" id="total-amt">¥ 0</div>
     </div>
     <div id="profit-sec" class="profit-banner">
-      <div class="lbl">粗利</div>
+      <div class="lbl" id="profit-lbl">実NET粗利</div>
       <div class="amt" id="profit-amt">¥ 0</div>
-      <div class="sub" id="profit-rate">粗利率 0.0%</div>
+      <div class="sub" id="profit-rate">実NET粗利率 0.0%</div>
+      <div class="sub" id="profit-sub" style="font-size:11px;opacity:.75;margin-top:2px"></div>
     </div>
   </div>
 
@@ -475,6 +476,7 @@ tfoot td.l{text-align:left}
   <div class="action-bar no-print">
     <button type="button" id="previewBtn" class="btn-preview">PDF確認プレビュー</button>
     <button type="button" id="saveProjectBtn" class="btn-preview" onclick="saveProjectData()">案件を保存</button>
+    <button type="button" id="saveAsNewBtn" class="btn-preview" onclick="saveAsNewProject()">別案件として保存</button>
     <button type="button" id="loadProjectBtn" class="btn-preview" onclick="showSavedProjects()">案件を呼び出し</button>
     <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
     <button type="button" id="sendToManagerBtn" class="btn-send-manager" onclick="sendToManager()">現場管理に送る</button>
@@ -534,6 +536,8 @@ var MIRRORS      = {'Yカガミ3':1,'Yカガミ5':1,'Yカガミ6':1};
 var viewMode = 'internal';
 var rid = 0;
 var _lastCalc = {};
+var currentProjectId = null;
+var isSaving = false;
 
 /* ══════════════════════════════════════════════
    ヘルパー
@@ -619,6 +623,7 @@ function getRowData(el){
     priceMode:   priceMode,
     customSqm:   parseFloat((el.querySelector('.custom-sqm')  ||{value:0}).value) || 0,
     customMat:   parseFloat((el.querySelector('.custom-mat')  ||{value:0}).value) || 0,
+    matScope:    radio(el, 'msc' + id) || 'per_unit',
     customSell:  parseFloat((el.querySelector('.custom-sell') ||{value:0}).value) || 0,
     customMatC:  parseFloat((el.querySelector('.custom-matc') ||{value:0}).value) || 0,
     sellMult:    parseFloat((el.querySelector('.sell-mult')   ||{value:2.0}).value) || 2.0,
@@ -657,7 +662,7 @@ function calcRow(d){
       materialCost = Math.round(d.customSqm * area * q * 1.10);
       glassPrice   = Math.round(materialCost * mult);
     } else if(d.priceMode === 'mat'){
-      materialCost = d.customMat;
+      materialCost = (d.matScope === 'total') ? d.customMat : d.customMat * q;
       glassPrice   = Math.round(materialCost * mult);
     } else {
       materialCost = d.customMatC || 0;
@@ -819,6 +824,10 @@ function calc(){
     netAmt = q.netTax === 'incl' ? Math.round(q.netManual / 1.1) : q.netManual;
   }
 
+  /* 実NET粗利 = NET金額(税抜) − 材料原価合計 */
+  var netProfit     = netAmt - iSumMAT;
+  var netProfitRate = netAmt > 0 ? (netProfit / netAmt * 100) : 0;
+
   /* お見積書金額 */
   var quoteAmt;
   if(q.qaMode === 'detail'){
@@ -830,16 +839,18 @@ function calc(){
   }
 
   renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q);
-  renderSummary(totals, netAmt, quoteAmt, s, q);
-  renderPrintSummary(totals, netAmt, quoteAmt, s, q);
+  renderSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate);
+  renderPrintSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate);
 
   _lastCalc = {
-    iGrand:    totals.iGrand,
-    iProfit:   totals.iProfit,
-    iSumMAT:   totals.iSumMAT,
-    cGrand:    totals.cGrand,
-    netAmt:    netAmt,
-    quoteAmt:  quoteAmt
+    iGrand:       totals.iGrand,
+    iProfit:      totals.iProfit,
+    iSumMAT:      totals.iSumMAT,
+    cGrand:       totals.cGrand,
+    netAmt:       netAmt,
+    quoteAmt:     quoteAmt,
+    netProfit:    netProfit,
+    netProfitRate:netProfitRate
   };
 }
 
@@ -1008,7 +1019,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
 /* ══════════════════════════════════════════════
    サマリー描画
 ══════════════════════════════════════════════ */
-function renderSummary(totals, netAmt, quoteAmt, s, q){
+function renderSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate){
   var isInt = viewMode === 'internal';
   var grand = isInt ? totals.iGrand : totals.cGrand;
 
@@ -1018,17 +1029,31 @@ function renderSummary(totals, netAmt, quoteAmt, s, q){
   var ps = gv('profit-sec');
   if(isInt){
     ps.style.display = '';
-    gv('profit-amt').textContent = '¥ ' + fmt(totals.iProfit);
-    gv('profit-rate').textContent = '粗利率 ' + totals.profitRate.toFixed(1) + '%';
+    /* 緑バナー＝実NET粗利 */
+    gv('profit-amt').textContent  = '¥ ' + fmt(netProfit);
+    gv('profit-rate').textContent = '実NET粗利率 ' + netProfitRate.toFixed(1) + '%';
+    if(gv('profit-sub'))
+      gv('profit-sub').textContent = '社内計算粗利 ¥' + fmt(totals.iProfit) + ' (' + totals.profitRate.toFixed(1) + '%)';
   } else {
     ps.style.display = 'none';
   }
 
   var diff = quoteAmt - netAmt;
   var qh = '';
+  /* 社内用：社内合計・社内計算粗利も表示 */
+  if(isInt){
+    qh += '<div class="quote-row"><span class="ql">社内合計金額（税抜）</span><span class="qv">¥ ' + fmt(totals.iGrand) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">社内合計（税込）</span><span class="qv">¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">材料原価合計</span><span class="qv">¥ ' + fmt(totals.iSumMAT) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">社内計算粗利</span><span class="qv">¥ ' + fmt(totals.iProfit) + '　(' + totals.profitRate.toFixed(1) + '%)</span></div>';
+  }
   if(q.showNET){
     qh += '<div class="quote-row"><span class="ql">NET金額（税抜）</span><span class="qv">¥ ' + fmt(netAmt) + '</span></div>';
     qh += '<div class="quote-row"><span class="ql">NET金額（税込）</span><span class="qv">¥ ' + fmt(Math.round(netAmt * 1.1)) + '</span></div>';
+    if(isInt){
+      qh += '<div class="quote-row" style="background:#e8f5e9;border-radius:4px;padding:4px 2px"><span class="ql"><strong>実NET粗利</strong></span><span class="qv"><strong>¥ ' + fmt(netProfit) + '</strong></span></div>';
+      qh += '<div class="quote-row"><span class="ql">実NET粗利率</span><span class="qv">' + netProfitRate.toFixed(1) + '%</span></div>';
+    }
   }
   if(q.showQA){
     qh += '<div class="quote-row"><span class="ql">お見積書金額（税抜）</span><span class="qv">¥ ' + fmt(quoteAmt) + '</span></div>';
@@ -1054,7 +1079,7 @@ function renderSummary(totals, netAmt, quoteAmt, s, q){
 /* ══════════════════════════════════════════════
    印刷用サマリー描画
 ══════════════════════════════════════════════ */
-function renderPrintSummary(totals, netAmt, quoteAmt, s, q){
+function renderPrintSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate){
   var isInt = viewMode === 'internal';
   var ph = '<div class="print-summary-inner">';
   ph += '<div class="print-company">ユーエス硝子</div>';
@@ -1063,15 +1088,23 @@ function renderPrintSummary(totals, netAmt, quoteAmt, s, q){
   if(q.date)      ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">発行日：' + escH(q.date) + '</div>';
   if(q.number)    ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">見積番号：' + escH(q.number) + '</div>';
   if(isInt){
-    ph += '<div class="print-summary-row"><span>合計金額（社内）</span><span>¥ ' + fmt(totals.iGrand) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>粗利</span><span>¥ ' + fmt(totals.iProfit) + '　（粗利率 ' + totals.profitRate.toFixed(1) + '%）</span></div>';
+    /* 社内用：原価・粗利すべて表示 */
+    ph += '<div class="print-summary-row"><span>材料原価合計</span><span>¥ ' + fmt(totals.iSumMAT) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>社内計算売上（税抜）</span><span>¥ ' + fmt(totals.iGrand) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>社内計算売上（税込）</span><span>¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>社内計算粗利</span><span>¥ ' + fmt(totals.iProfit) + '　（' + totals.profitRate.toFixed(1) + '%）</span></div>';
+    ph += '<div class="print-summary-row"><span>NET金額（税抜）</span><span>¥ ' + fmt(netAmt) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>NET金額（税込）</span><span>¥ ' + fmt(Math.round(netAmt * 1.1)) + '</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:900"><span>実NET粗利</span><span>¥ ' + fmt(netProfit) + '　（' + netProfitRate.toFixed(1) + '%）</span></div>';
   } else {
-    ph += '<div class="print-summary-row"><span>見積金額合計（税抜）</span><span>¥ ' + fmt(totals.cGrand) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>見積金額合計（税込）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 1.1)) + '</span></div>';
-    if(q.showNET) ph += '<div class="print-summary-row"><span>NET金額（税抜）</span><span>¥ ' + fmt(netAmt) + '</span></div>';
+    /* 元請け用：原価・粗利は非表示、税込・税抜のみ */
+    ph += '<div class="print-summary-row"><span>見積金額小計（税抜）</span><span>¥ ' + fmt(totals.cGrand) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>消費税（10%）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 0.1)) + '</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:900"><span>見積金額合計（税込）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 1.1)) + '</span></div>';
     if(q.showQA){
       ph += '<div class="print-summary-row"><span>お見積書金額（税抜）</span><span>¥ ' + fmt(quoteAmt) + '</span></div>';
-      ph += '<div class="print-summary-row"><span>お見積書金額（税込）</span><span>¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '</span></div>';
+      ph += '<div class="print-summary-row"><span>消費税（10%）</span><span>¥ ' + fmt(Math.round(quoteAmt * 0.1)) + '</span></div>';
+      ph += '<div class="print-summary-row" style="font-weight:900"><span>お見積書金額（税込）</span><span>¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '</span></div>';
     }
   }
   if(q.notes) ph += '<div style="font-size:10px;color:#555;margin-top:2mm;border-top:1px solid #ddd;padding-top:2mm">備考：' + escH(q.notes) + '</div>';
@@ -1399,6 +1432,7 @@ function collectRowsData(){
       fire:       radio(card, 'fir' + id) || '0',
       ckRemoval:  radio(card, 'ckr' + id) || '0',
       caulkSide:  radio(card, 'cks' + id) || 'double',
+      matScope:   radio(card, 'msc' + id) || 'per_unit',
       disposal:   radio(card, 'dsp' + id) || '0',
       caulkRate:  (card.querySelector('.caulk-rate')   || {value:''}).value,
       removalRate:(card.querySelector('.removal-rate') || {value:''}).value,
@@ -1412,34 +1446,93 @@ function collectRowsData(){
   return rows;
 }
 
+function _makeSavedAt(){
+  var now = new Date();
+  return now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+}
+
+function updateSaveButtonLabel(){
+  var btn = gv('saveProjectBtn');
+  if(btn) btn.textContent = currentProjectId ? '案件を上書き保存' : '案件を保存';
+}
+
 function saveProjectData(){
+  if(isSaving) return;
+  isSaving = true;
+  var btn = gv('saveProjectBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '保存中...'; }
   try {
     calc();
-    var projectName = (gv('pname') || {value:''}).value || '無題案件';
-    var data = {
-      pname:    projectName,
-      settings: collectSettingsData(),
-      quote:    collectQuoteData(),
-      rows:     collectRowsData()
-    };
+    var projectName = (gv('pname') || {value:''}).value.trim() || '無題案件';
+    var data = { pname:projectName, settings:collectSettingsData(), quote:collectQuoteData(), rows:collectRowsData() };
+
+    var projects = [];
+    try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
+    projects = projects.map(function(p){
+      if(!p.id) p.id = 'case_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      return p;
+    });
+
+    var savedAt = _makeSavedAt();
+    var isUpdate = false;
+    if(currentProjectId){
+      var idx = projects.findIndex(function(p){ return p.id === currentProjectId; });
+      if(idx >= 0){
+        projects[idx] = { id:currentProjectId, name:projectName, savedAt:savedAt, data:data };
+        isUpdate = true;
+      }
+    }
+    if(!isUpdate){
+      var newId = 'case_' + Date.now();
+      currentProjectId = newId;
+      projects.unshift({ id:newId, name:projectName, savedAt:savedAt, data:data });
+    }
+
+    localStorage.setItem('usglass_projects', JSON.stringify(projects));
+    alert(isUpdate ? '上書き保存しました：' + projectName : '新規保存しました：' + projectName);
+  } catch(e){
+    console.error('案件保存エラー:', e);
+    alert('案件保存でエラーが発生しました：' + (e.message || e));
+  } finally {
+    isSaving = false;
+    if(btn) btn.disabled = false;
+    updateSaveButtonLabel();
+  }
+}
+
+function saveAsNewProject(){
+  if(isSaving) return;
+  if(!confirm('現在の内容を別案件として新規保存しますか？')) return;
+  isSaving = true;
+  var btn = gv('saveAsNewBtn');
+  var mainBtn = gv('saveProjectBtn');
+  if(btn){ btn.disabled = true; }
+  if(mainBtn){ mainBtn.disabled = true; }
+  try {
+    calc();
+    var projectName = (gv('pname') || {value:''}).value.trim() || '無題案件';
+    var data = { pname:projectName, settings:collectSettingsData(), quote:collectQuoteData(), rows:collectRowsData() };
 
     var projects = [];
     try { projects = JSON.parse(localStorage.getItem('usglass_projects') || '[]'); } catch(e){ projects = []; }
 
-    var now = new Date();
-    var id = String(now.getTime());
-    var savedAt = now.getFullYear() + '-' +
-      String(now.getMonth() + 1).padStart(2,'0') + '-' +
-      String(now.getDate()).padStart(2,'0') + ' ' +
-      String(now.getHours()).padStart(2,'0') + ':' +
-      String(now.getMinutes()).padStart(2,'0');
-
-    projects.unshift({ id:id, name:projectName, savedAt:savedAt, data:data });
+    var newId = 'case_' + Date.now();
+    currentProjectId = newId;
+    projects.unshift({ id:newId, name:projectName, savedAt:_makeSavedAt(), data:data });
     localStorage.setItem('usglass_projects', JSON.stringify(projects));
-    alert('案件を保存しました：' + projectName);
+    alert('別案件として保存しました：' + projectName);
   } catch(e){
     console.error('案件保存エラー:', e);
     alert('案件保存でエラーが発生しました：' + (e.message || e));
+  } finally {
+    isSaving = false;
+    if(btn) btn.disabled = false;
+    if(mainBtn) mainBtn.disabled = false;
+    updateSaveButtonLabel();
   }
 }
 
@@ -1492,8 +1585,10 @@ function loadProjectData(id){
   var project = projects.find(function(p){ return p.id === id; });
   if(!project){ alert('案件が見つかりません'); return; }
   if(!confirm('この案件を呼び出しますか？現在の入力内容は上書きされます。')) return;
+  currentProjectId = id;
   applyProjectData(project.data);
   hideSavedProjects();
+  updateSaveButtonLabel();
   alert('案件を呼び出しました：' + project.name);
 }
 
@@ -1530,6 +1625,7 @@ function applyRowData(card, row){
   setRadio('fir' + id, row.fire       || '0');
   setRadio('ckr' + id, row.ckRemoval  || '0');
   setRadio('cks' + id, row.caulkSide  || 'double');
+  setRadio('msc' + id, row.matScope   || 'per_unit');
   setRadio('dsp' + id, row.disposal   || '0');
   updateRow(card);
 }
@@ -1602,6 +1698,7 @@ function bindButtons(){
   safe('masterResetBtn', resetMasterPrices);
   safe('saveQuoteBtn',      saveQuoteHTML);
   safe('saveProjectBtn',    saveProjectData);
+  safe('saveAsNewBtn',      saveAsNewProject);
   safe('loadProjectBtn',    showSavedProjects);
   safe('exportMasterBtn',   exportMasterPrices);
   safe('importMasterBtn',   importMasterPrices);
@@ -1744,8 +1841,14 @@ function addRow(){
         <div class="fields-wide" style="margin-top:8px">
           <div class="fg pm-sqm-row"><span class="fglabel">A：材料単価 (円/m²)</span>
             <input type="number" class="custom-sqm" placeholder="0" min="0" step="100" oninput="calc()"></div>
-          <div class="fg pm-mat-row" style="display:none"><span class="fglabel">B：材料原価 (円)</span>
-            <input type="number" class="custom-mat" placeholder="0" min="0" step="100" oninput="calc()"></div>
+          <div class="fg pm-mat-row" style="display:none">
+            <span class="fglabel">B：材料原価（円／1枚）</span>
+            <div class="rrow" style="margin-top:4px">
+              <label><input type="radio" name="msc${id}" value="per_unit" checked onchange="calc()"> 1枚あたり原価</label>
+              <label><input type="radio" name="msc${id}" value="total" onchange="calc()"> 明細全体原価</label>
+            </div>
+            <input type="number" class="custom-mat" placeholder="0" min="0" step="100" oninput="calc()">
+          </div>
           <div class="fg pm-sell-row" style="display:none"><span class="fglabel">C：材料原価 (円・任意)</span>
             <input type="number" class="custom-matc" placeholder="0" min="0" step="100" oninput="calc()"></div>
           <div class="fg pm-sell-row" style="display:none"><span class="fglabel">C：ガラス売価 (円)</span>
