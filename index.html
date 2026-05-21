@@ -174,6 +174,16 @@ tfoot td.l{text-align:left}
 .btn-drive:active{background:#283593}
 .btn-drive.load{background:#6a1b9a}
 .btn-drive.load:active{background:#4a148c}
+.bottom-view-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:10px 14px;background:#f0f4fa;border:1.5px solid #b0c4d8;border-radius:10px}
+.bottom-view-bar .bvb-label{font-size:11px;font-weight:800;color:#0d2b50;white-space:nowrap}
+.bottom-view-bar .bvb-tabs{display:flex;border-radius:8px;overflow:hidden;border:2px solid #1a5f8c}
+.tbtn-bot{padding:12px 22px;border:none;font-size:15px;font-weight:800;font-family:inherit;background:#fff;color:#1a5f8c;min-height:48px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tbtn-bot:first-child{border-right:1px solid #1a5f8c}
+.tbtn-bot.on{background:#1a5f8c;color:#fff}
+.pdf-mode-label{font-size:12px;font-weight:700;color:#1b5e20;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:5px 11px;white-space:nowrap}
+.btn-reset-est{background:#bf360c;color:#fff;border:none;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:800;font-family:inherit;min-height:48px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn-reset-est:active{background:#8d1b0a}
+.bottom-action-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .drive-sync-lbl{font-size:12px;color:#555;margin-left:auto}
 .sblock-full{grid-column:1/-1}
 
@@ -193,7 +203,11 @@ tfoot td.l{text-align:left}
 .preview-mode .btn-add,
 .preview-mode .banner-row,
 .preview-mode #quote-summary-box,
-.preview-mode .action-bar{display:none!important}
+.preview-mode .action-bar,
+.preview-mode .handoff-bar,
+.preview-mode .drive-sync-bar,
+.preview-mode .bottom-view-bar,
+.preview-mode .bottom-action-row{display:none!important}
 .preview-mode .tbl-section{box-shadow:none;border:1.5px solid #ccd;border-radius:8px;overflow:visible}
 /* プレビューモードでは画面幅に関わらず必ず横表表示 */
 .preview-mode table{display:table!important;width:100%!important;min-width:0!important;table-layout:fixed!important;font-size:9px!important}
@@ -548,6 +562,22 @@ tfoot td.l{text-align:left}
     <button type="button" id="driveSaveBtn" class="btn-drive" onclick="syncToGoogleDrive()">Driveへ同期保存</button>
     <button type="button" id="driveLoadBtn" class="btn-drive load" onclick="syncFromGoogleDrive()">Driveから同期読み込み</button>
     <span id="drive-sync-label" class="drive-sync-lbl">未同期</span>
+  </div>
+
+  <!-- 下部タブ -->
+  <div class="bottom-view-bar no-print">
+    <span class="bvb-label">表示モード</span>
+    <div class="bvb-tabs">
+      <button type="button" id="btn-int-bot" class="tbtn-bot on" onclick="setView('internal')">社内用</button>
+      <button type="button" id="btn-cus-bot" class="tbtn-bot"    onclick="setView('customer')">元請け提出用</button>
+    </div>
+    <span id="pdf-mode-label" class="pdf-mode-label">現在の出力：社内用PDF</span>
+  </div>
+
+  <!-- 下部アクション -->
+  <div class="bottom-action-row no-print">
+    <button type="button" id="resetEstimateBtn" class="btn-reset-est">明細をリセット</button>
+    <button type="button" id="pdfBtnBot" class="btn-pdf">PDF出力（A4 横）</button>
   </div>
 
 </div><!-- /.app -->
@@ -1246,8 +1276,16 @@ function renderPrintSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfit
 ══════════════════════════════════════════════ */
 function setView(mode){
   viewMode = mode;
+  /* 上部タブ */
   gv('btn-int').className = 'tbtn' + (mode === 'internal' ? ' on' : '');
   gv('btn-cus').className = 'tbtn' + (mode === 'customer' ? ' on' : '');
+  /* 下部タブ */
+  var bi = gv('btn-int-bot'), bc = gv('btn-cus-bot');
+  if(bi) bi.className = 'tbtn-bot' + (mode === 'internal' ? ' on' : '');
+  if(bc) bc.className = 'tbtn-bot' + (mode === 'customer' ? ' on' : '');
+  /* PDF出力ラベル */
+  var pl = gv('pdf-mode-label');
+  if(pl) pl.textContent = '現在の出力：' + (mode === 'internal' ? '社内用PDF' : '元請け提出用PDF');
   calc();
 }
 
@@ -1892,6 +1930,51 @@ function applyProjectData(data){
   calc();
 }
 
+function resetEstimate(){
+  if(!confirm(
+    '現在の明細をリセットして、新しい見積入力状態に戻します。\n' +
+    '案件を保存していない場合、現在の入力内容は失われます。\n\n' +
+    'リセットしますか？'
+  )) return;
+
+  /* 明細行クリア */
+  var box = gv('row-cards');
+  if(box) box.innerHTML = '';
+  rid = 0;
+
+  /* 案件名・見積書フィールドクリア */
+  if(gv('pname'))       gv('pname').value       = '';
+  if(gv('q-title'))     gv('q-title').value     = 'お見積書';
+  if(gv('q-addr'))      gv('q-addr').value      = '';
+  if(gv('q-case'))      gv('q-case').value      = '';
+  if(gv('q-date'))      gv('q-date').value      = '';
+  if(gv('q-num'))       gv('q-num').value       = '';
+  if(gv('q-notes'))     gv('q-notes').value     = '';
+  if(gv('net-manual'))  gv('net-manual').value  = '0';
+  setRadio('netMode', 'auto');
+  setRadio('netTax',  'excl');
+  if(gv('show-net'))    gv('show-net').checked  = true;
+  if(gv('qa-manual'))   gv('qa-manual').value   = '0';
+  if(gv('qa-net-mult')) gv('qa-net-mult').value = '1.25';
+  setRadio('qaMode', 'detail');
+  setRadio('qaTax',  'excl');
+  if(gv('show-qa'))     gv('show-qa').checked   = true;
+
+  /* 現在の案件IDをクリア → 次回保存は新規 */
+  currentProjectId = null;
+  _handoffPayload  = null;
+  updateSaveButtonLabel();
+
+  /* 明細1行追加 */
+  addRow();
+
+  /* 再計算・スクロール */
+  calc();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+
+  alert('明細をリセットしました。次の見積を入力できます。');
+}
+
 function bindButtons(){
   function safe(id, fn){
     var btn = gv(id);
@@ -1900,6 +1983,7 @@ function bindButtons(){
     btn.addEventListener('touchend', function(){ fn(); }, false);
   }
   safe('pdfBtn',         printPDF);
+  safe('pdfBtnBot',      printPDF);
   safe('previewPdfBtn',  printPDF);
   safe('previewBtn',     previewPDF);
   safe('exitPreviewBtn', exitPreview);
@@ -1912,6 +1996,7 @@ function bindButtons(){
   safe('exportMasterBtn',   exportMasterPrices);
   safe('importMasterBtn',   importMasterPrices);
   safe('sendToManagerBtn',  sendToManager);
+  safe('resetEstimateBtn',  resetEstimate);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
