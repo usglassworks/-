@@ -1011,7 +1011,7 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
       h += '<tr class="tr-disc"><td colspan="21" class="l">値引き' + (s.discName ? ' （' + escH(s.discName) + '）' : '') + '</td>';
       h += '<td><strong>▲ ' + fmt(s.discAmt) + '</strong></td></tr>';
     }
-    h += '<tr class="tr-grand"><td colspan="21" class="l">合計金額</td>';
+    h += '<tr class="tr-grand"><td colspan="21" class="l">社内計算合計</td>';
     h += '<td><strong>' + fmt(totals.iGrand) + '</strong></td></tr>';
     h += '</tfoot></table>';
 
@@ -1020,8 +1020,8 @@ function renderTable(datas, calcs, cDisp, s, totals, netAmt, quoteAmt, q){
     h += '<div class="mt-row" style="background:#ecf3fb;border-top:2px solid #1a5f8c"><span>小計</span><span>' + fmt(totals.iSub) + '</span></div>';
     h += '<div class="mt-row" style="background:#fff8e1"><span>' + makeMiscLabel(totals) + '</span><span>' + fmt(totals.misc) + '</span></div>';
     if(s.discAmt > 0) h += '<div class="mt-row" style="background:#fef3f3"><span>値引き</span><span>▲ ' + fmt(s.discAmt) + '</span></div>';
-    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>合計金額</span><span>' + fmt(totals.iGrand) + '</span></div>';
-    h += '<div class="mt-row" style="background:#e8f5e9"><span>粗利（' + totals.profitRate.toFixed(1) + '%）</span><span>' + fmt(totals.iProfit) + '</span></div>';
+    h += '<div class="mt-row" style="background:#0d2b50;color:#fff;font-weight:800"><span>社内計算合計</span><span>' + fmt(totals.iGrand) + '</span></div>';
+    h += '<div class="mt-row" style="background:#e8f5e9"><span>社内計算粗利（' + totals.profitRate.toFixed(1) + '%）</span><span>' + fmt(totals.iProfit) + '</span></div>';
     h += '</div>';
 
   } else {
@@ -1127,8 +1127,8 @@ function renderSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate)
   var qh = '';
   /* 社内用：社内合計・社内計算粗利も表示 */
   if(isInt){
-    qh += '<div class="quote-row"><span class="ql">社内合計金額（税抜）</span><span class="qv">¥ ' + fmt(totals.iGrand) + '</span></div>';
-    qh += '<div class="quote-row"><span class="ql">社内合計（税込）</span><span class="qv">¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">社内計算合計（税抜）</span><span class="qv">¥ ' + fmt(totals.iGrand) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">社内計算合計（税込）</span><span class="qv">¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
     qh += '<div class="quote-row"><span class="ql">ガラス材料原価</span><span class="qv">¥ ' + fmt(totals.iSumMAT) + '</span></div>';
     if(totals.iSumCKMAT > 0){
       qh += '<div class="quote-row"><span class="ql">コーキング施工M数</span><span class="qv">' + totals.iSumCKM.toFixed(3) + ' m</span></div>';
@@ -1136,7 +1136,7 @@ function renderSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfitRate)
       if(s.ckUnitPrice) qh += '<div class="quote-row"><span class="ql">コーキング本体価格</span><span class="qv">¥ ' + fmt(s.ckUnitPrice) + '／本</span></div>';
       qh += '<div class="quote-row"><span class="ql">コーキング材料原価</span><span class="qv">¥ ' + fmt(totals.iSumCKMAT) + '</span></div>';
     }
-    qh += '<div class="quote-row"><span class="ql">原価合計</span><span class="qv">¥ ' + fmt(totals.totalMatCost) + '</span></div>';
+    qh += '<div class="quote-row"><span class="ql">材料原価合計</span><span class="qv">¥ ' + fmt(totals.totalMatCost) + '</span></div>';
     qh += '<div class="quote-row"><span class="ql">社内計算粗利</span><span class="qv">¥ ' + fmt(totals.iProfit) + '　(' + totals.profitRate.toFixed(1) + '%)</span></div>';
   }
   if(q.showNET){
@@ -1180,28 +1180,28 @@ function renderPrintSummary(totals, netAmt, quoteAmt, s, q, netProfit, netProfit
   if(q.date)      ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">発行日：' + escH(q.date) + '</div>';
   if(q.number)    ph += '<div style="font-size:10px;color:#555;margin-bottom:2mm">見積番号：' + escH(q.number) + '</div>';
   if(isInt){
-    /* 社内用：原価・粗利すべて表示 */
-    ph += '<div class="print-summary-row"><span>ガラス材料原価</span><span>¥ ' + fmt(totals.iSumMAT) + '</span></div>';
+    /* 社内用：合計→NET→原価→粗利の順で表示 */
+    ph += '<div class="print-summary-row"><span>社内計算合計（税抜）</span><span>¥ ' + fmt(totals.iGrand) + '</span></div>';
+    ph += '<div class="print-summary-row"><span>社内計算合計（税込）</span><span>¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:700"><span>NET金額（税抜）</span><span>¥ ' + fmt(netAmt) + '</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:700"><span>NET金額（税込）</span><span>¥ ' + fmt(Math.round(netAmt * 1.1)) + '</span></div>';
+    ph += '<div class="print-summary-row" style="border-top:1px solid #ccc;margin-top:1mm;padding-top:1mm"><span>ガラス材料原価</span><span>¥ ' + fmt(totals.iSumMAT) + '</span></div>';
     if(totals.iSumCKMAT > 0){
-      ph += '<div class="print-summary-row"><span>コーキング施工M数</span><span>' + totals.iSumCKM.toFixed(3) + ' m</span></div>';
       ph += '<div class="print-summary-row"><span>コーキング材料原価</span><span>¥ ' + fmt(totals.iSumCKMAT) + '</span></div>';
     }
-    ph += '<div class="print-summary-row" style="font-weight:700"><span>原価合計</span><span>¥ ' + fmt(totals.totalMatCost) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>社内計算売上（税抜）</span><span>¥ ' + fmt(totals.iGrand) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>社内計算売上（税込）</span><span>¥ ' + fmt(Math.round(totals.iGrand * 1.1)) + '</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:700"><span>材料原価合計</span><span>¥ ' + fmt(totals.totalMatCost) + '</span></div>';
     ph += '<div class="print-summary-row"><span>社内計算粗利</span><span>¥ ' + fmt(totals.iProfit) + '　（' + totals.profitRate.toFixed(1) + '%）</span></div>';
-    ph += '<div class="print-summary-row"><span>NET金額（税抜）</span><span>¥ ' + fmt(netAmt) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>NET金額（税込）</span><span>¥ ' + fmt(Math.round(netAmt * 1.1)) + '</span></div>';
-    ph += '<div class="print-summary-row" style="font-weight:900"><span>実NET粗利</span><span>¥ ' + fmt(netProfit) + '　（' + netProfitRate.toFixed(1) + '%）</span></div>';
+    ph += '<div class="print-summary-row" style="font-weight:900;background:#e8f5e9;border-radius:3px;padding:1mm 2mm"><span>実NET粗利</span><span>¥ ' + fmt(netProfit) + '　（' + netProfitRate.toFixed(1) + '%）</span></div>';
   } else {
-    /* 元請け用：原価・粗利は非表示、税込・税抜のみ */
-    ph += '<div class="print-summary-row"><span>見積金額小計（税抜）</span><span>¥ ' + fmt(totals.cGrand) + '</span></div>';
-    ph += '<div class="print-summary-row"><span>消費税（10%）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 0.1)) + '</span></div>';
-    ph += '<div class="print-summary-row" style="font-weight:900"><span>見積金額合計（税込）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 1.1)) + '</span></div>';
+    /* 元請け用：原価・粗利は非表示 */
     if(q.showQA){
       ph += '<div class="print-summary-row"><span>お見積書金額（税抜）</span><span>¥ ' + fmt(quoteAmt) + '</span></div>';
       ph += '<div class="print-summary-row"><span>消費税（10%）</span><span>¥ ' + fmt(Math.round(quoteAmt * 0.1)) + '</span></div>';
       ph += '<div class="print-summary-row" style="font-weight:900"><span>お見積書金額（税込）</span><span>¥ ' + fmt(Math.round(quoteAmt * 1.1)) + '</span></div>';
+    } else {
+      ph += '<div class="print-summary-row"><span>お見積書金額（税抜）</span><span>¥ ' + fmt(totals.cGrand) + '</span></div>';
+      ph += '<div class="print-summary-row"><span>消費税（10%）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 0.1)) + '</span></div>';
+      ph += '<div class="print-summary-row" style="font-weight:900"><span>お見積書金額（税込）</span><span>¥ ' + fmt(Math.round(totals.cGrand * 1.1)) + '</span></div>';
     }
   }
   if(q.notes) ph += '<div style="font-size:10px;color:#555;margin-top:2mm;border-top:1px solid #ddd;padding-top:2mm">備考：' + escH(q.notes) + '</div>';
@@ -1355,44 +1355,71 @@ function sendToManager(){
       return;
     }
 
-    var estimateAmount = isCustomer ? _lastCalc.quoteAmt : _lastCalc.iGrand;
-    var estimateType   = isCustomer ? '元請け用見積書' : '社内用見積書';
+    /* ── 金額の決定 ── */
+    var netMode = globalRadio('netMode') || 'auto';
+    var netAmt  = _lastCalc.netAmt  || 0;   /* 税抜NET金額 */
+    var iGrand  = _lastCalc.iGrand  || 0;   /* 社内計算合計（税抜） */
+
+    /* NET優先：手動設定があればnetAmt、なければiGrandをNETとして扱う */
+    var netTaxExcl = netAmt;
+    var netTaxIncl = Math.round(netTaxExcl * 1.1);
+
+    var estimateType;
+    if(isCustomer){
+      estimateType = '元請け用見積書';
+    } else if(netMode === 'manual'){
+      estimateType = 'NET見積';
+    } else {
+      estimateType = '社内用見積書';
+    }
 
     var dateStr  = qDate || new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
     var safeName = siteName.replace(/[\\/:*?"<>|]/g, '_');
     var pdfFileName = dateStr + '_' + safeName + '_' + estimateType + '.pdf';
 
     var now = new Date();
-    var id  = String(now.getTime());
+    var id  = 'handoff_' + String(now.getTime());
+
+    var materialCost   = _lastCalc.totalMatCost || _lastCalc.iSumMAT || 0;
+    var internalProfit = _lastCalc.iProfit || 0;
+    var netProfit      = _lastCalc.netProfit !== undefined ? _lastCalc.netProfit : (netTaxExcl - materialCost);
 
     var payload = {
-      id:             id,
-      createdAt:      now.toISOString(),
-      companyName:    companyName,
-      siteName:       siteName,
-      estimateType:   estimateType,
-      estimateAmount: estimateAmount || 0,
-      cost:           _lastCalc.totalMatCost || _lastCalc.iSumMAT || 0,
-      profit:         _lastCalc.iProfit || 0,
-      memo:           qNotes || '',
-      pdfFileName:    pdfFileName,
-      processed:      false
+      id:                          id,
+      createdAt:                   now.toISOString(),
+      companyName:                 companyName,
+      siteName:                    siteName,
+      estimateType:                estimateType,
+      estimateAmountTaxExcluded:   netTaxExcl,
+      estimateAmountTaxIncluded:   netTaxIncl,
+      estimateAmount:              netTaxIncl,
+      internalAmount:              iGrand,
+      materialCost:                materialCost,
+      internalProfit:              internalProfit,
+      netProfit:                   netProfit,
+      taxRate:                     0.1,
+      memo:                        qNotes || '',
+      pdfFileName:                 pdfFileName,
+      processed:                   false
     };
 
     /* ── 送信内容の確認ダイアログ ── */
     var confirmMsg =
         '【送信内容の確認】\n\n'
-      + '建築会社名：' + payload.companyName + '\n'
-      + '現場名　　：' + payload.siteName + '\n'
-      + '種別　　　：' + payload.estimateType + '\n'
-      + '見積金額　：¥' + payload.estimateAmount.toLocaleString('ja-JP') + '\n'
-      + '原価　　　：¥' + payload.cost.toLocaleString('ja-JP') + '\n'
-      + '粗利　　　：¥' + payload.profit.toLocaleString('ja-JP') + '\n'
-      + (payload.memo ? 'メモ　　　：' + payload.memo + '\n' : '')
+      + '建築会社名　　：' + payload.companyName + '\n'
+      + '現場名　　　　：' + payload.siteName + '\n'
+      + '種別　　　　　：' + payload.estimateType + '\n'
+      + 'NET金額（税抜）：¥' + payload.estimateAmountTaxExcluded.toLocaleString('ja-JP') + '\n'
+      + 'NET金額（税込）：¥' + payload.estimateAmountTaxIncluded.toLocaleString('ja-JP') + '\n'
+      + '社内計算合計　：¥' + payload.internalAmount.toLocaleString('ja-JP') + '\n'
+      + '材料原価合計　：¥' + payload.materialCost.toLocaleString('ja-JP') + '\n'
+      + '実NET粗利　　：¥' + payload.netProfit.toLocaleString('ja-JP') + '\n'
+      + (payload.memo ? 'メモ　　　　　：' + payload.memo + '\n' : '')
       + '\nこの内容で現場管理アプリへ送りますか？';
 
     if(!confirm(confirmMsg)) return;
 
+    /* ── localStorage 保存 ── */
     var handoff = [];
     try {
       var raw    = localStorage.getItem('usGlassEstimateHandoff');
@@ -1402,9 +1429,16 @@ function sendToManager(){
     handoff.push(payload);
     localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(handoff));
 
-    if(confirm('送信しました。\n\n現場管理アプリを開きますか？')){
-      window.open(MANAGER_URL, '_blank');
+    /* ── 保存確認 ── */
+    var saved = localStorage.getItem('usGlassEstimateHandoff');
+    if(!saved){
+      alert('現場管理へ送るデータの保存に失敗しました。');
+      return;
     }
+
+    /* ── 管理アプリへ画面遷移 ── */
+    alert('現場管理へ送信しました。管理アプリを開きます。');
+    window.location.href = MANAGER_URL + '?handoff=1';
 
   } catch(e){
     console.error('現場管理送信エラー:', e);
