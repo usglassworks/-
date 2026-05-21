@@ -273,6 +273,19 @@ tfoot td.l{text-align:left}
 .project-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .project-modal-head strong{font-size:16px;color:#0d2b50}
 .project-modal-head button{background:#888;color:#fff;border:none;padding:10px 18px;border-radius:7px;font-size:14px;font-weight:700;font-family:inherit;min-height:44px;touch-action:manipulation;cursor:pointer}
+.handoff-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200001;padding:16px;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center}
+.handoff-modal-inner{background:#fff;border-radius:14px;max-width:540px;width:100%;margin:24px auto;padding:22px}
+.handoff-modal h3{margin:0 0 14px;color:#1b5e20;font-size:17px}
+.handoff-modal-summary{background:#f5f7fa;border:1px solid #dde;border-radius:8px;padding:12px;font-size:12px;font-family:monospace;white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto;margin-bottom:14px;color:#333}
+.handoff-modal-guide{font-size:12px;color:#555;background:#fffde7;border:1px solid #ffe082;border-radius:7px;padding:10px 12px;margin-bottom:14px;line-height:1.7}
+.btn-hm{display:block;width:100%;padding:13px 16px;border:none;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center;touch-action:manipulation;margin-bottom:10px;min-height:48px}
+.btn-hm-copy{background:#1565c0;color:#fff}
+.btn-hm-copy:active{background:#0d47a1}
+.btn-hm-dl{background:#00695c;color:#fff}
+.btn-hm-dl:active{background:#004d40}
+.btn-hm-open{background:#e65100;color:#fff}
+.btn-hm-open:active{background:#bf360c}
+.btn-hm-close{background:#eceff1;color:#333;margin-bottom:0}
 .project-item{border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .project-item-title{font-weight:800;color:#0d2b50;font-size:15px}
 .project-item-date{font-size:12px;color:#666;margin-top:2px}
@@ -547,6 +560,25 @@ tfoot td.l{text-align:left}
       <button type="button" onclick="hideSavedProjects()">閉じる</button>
     </div>
     <div id="projectList"></div>
+  </div>
+</div>
+
+<!-- 現場管理送信モーダル -->
+<div id="handoffModal" class="handoff-modal no-print" style="display:none" onclick="if(event.target===this)closeHandoffModal()">
+  <div class="handoff-modal-inner">
+    <h3>現場管理へ送信</h3>
+    <div id="handoff-modal-summary" class="handoff-modal-summary"></div>
+    <div class="handoff-modal-guide">
+      <strong>【連携手順】</strong><br>
+      ① 「送信データをコピー」または「JSONダウンロード」<br>
+      ② 「管理アプリを開く」をタップ<br>
+      ③ 管理アプリ内でデータを取り込んでください
+    </div>
+    <button type="button" class="btn-hm btn-hm-copy" onclick="copyHandoffData()">送信データをコピー</button>
+    <button type="button" class="btn-hm btn-hm-dl"   onclick="downloadHandoffJSON()">送信用JSONをダウンロード</button>
+    <button type="button" class="btn-hm btn-hm-open" onclick="openManagerApp()">管理アプリを開く</button>
+    <p style="font-size:11px;color:#888;margin:0 0 12px;line-height:1.6">管理アプリを開いたあと、コピーした送信データまたはJSONファイルを取り込んでください。</p>
+    <button type="button" class="btn-hm btn-hm-close" onclick="closeHandoffModal()">閉じる</button>
   </div>
 </div>
 
@@ -1328,6 +1360,8 @@ async function printPDF(){
 ══════════════════════════════════════════════ */
 var MANAGER_URL = 'https://usglassworks.github.io/us-glass-estimate-manager/';
 
+var _handoffPayload = null;
+
 function sendToManager(){
   try {
     calc();
@@ -1360,7 +1394,6 @@ function sendToManager(){
     var netAmt  = _lastCalc.netAmt  || 0;   /* 税抜NET金額 */
     var iGrand  = _lastCalc.iGrand  || 0;   /* 社内計算合計（税抜） */
 
-    /* NET優先：手動設定があればnetAmt、なければiGrandをNETとして扱う */
     var netTaxExcl = netAmt;
     var netTaxIncl = Math.round(netTaxExcl * 1.1);
 
@@ -1383,8 +1416,9 @@ function sendToManager(){
     var materialCost   = _lastCalc.totalMatCost || _lastCalc.iSumMAT || 0;
     var internalProfit = _lastCalc.iProfit || 0;
     var netProfit      = _lastCalc.netProfit !== undefined ? _lastCalc.netProfit : (netTaxExcl - materialCost);
+    var netProfitRate  = _lastCalc.netProfitRate !== undefined ? _lastCalc.netProfitRate : (netTaxExcl > 0 ? netProfit / netTaxExcl * 100 : 0);
 
-    var payload = {
+    _handoffPayload = {
       id:                          id,
       createdAt:                   now.toISOString(),
       companyName:                 companyName,
@@ -1395,55 +1429,91 @@ function sendToManager(){
       estimateAmount:              netTaxIncl,
       internalAmount:              iGrand,
       materialCost:                materialCost,
+      totalCost:                   materialCost,
       internalProfit:              internalProfit,
       netProfit:                   netProfit,
+      netProfitRate:               Math.round(netProfitRate * 10) / 10,
       taxRate:                     0.1,
       memo:                        qNotes || '',
       pdfFileName:                 pdfFileName,
       processed:                   false
     };
 
-    /* ── 送信内容の確認ダイアログ ── */
-    var confirmMsg =
-        '【送信内容の確認】\n\n'
-      + '建築会社名　　：' + payload.companyName + '\n'
-      + '現場名　　　　：' + payload.siteName + '\n'
-      + '種別　　　　　：' + payload.estimateType + '\n'
-      + 'NET金額（税抜）：¥' + payload.estimateAmountTaxExcluded.toLocaleString('ja-JP') + '\n'
-      + 'NET金額（税込）：¥' + payload.estimateAmountTaxIncluded.toLocaleString('ja-JP') + '\n'
-      + '社内計算合計　：¥' + payload.internalAmount.toLocaleString('ja-JP') + '\n'
-      + '材料原価合計　：¥' + payload.materialCost.toLocaleString('ja-JP') + '\n'
-      + '実NET粗利　　：¥' + payload.netProfit.toLocaleString('ja-JP') + '\n'
-      + (payload.memo ? 'メモ　　　　　：' + payload.memo + '\n' : '')
-      + '\nこの内容で現場管理アプリへ送りますか？';
+    /* モーダルに概要を表示 */
+    var summaryLines =
+        '建築会社名　　：' + _handoffPayload.companyName + '\n'
+      + '現場名　　　　：' + _handoffPayload.siteName + '\n'
+      + '種別　　　　　：' + _handoffPayload.estimateType + '\n'
+      + 'NET金額（税抜）：¥' + _handoffPayload.estimateAmountTaxExcluded.toLocaleString('ja-JP') + '\n'
+      + 'NET金額（税込）：¥' + _handoffPayload.estimateAmountTaxIncluded.toLocaleString('ja-JP') + '\n'
+      + '社内計算合計　：¥' + _handoffPayload.internalAmount.toLocaleString('ja-JP') + '\n'
+      + '材料原価合計　：¥' + _handoffPayload.materialCost.toLocaleString('ja-JP') + '\n'
+      + '実NET粗利　　：¥' + _handoffPayload.netProfit.toLocaleString('ja-JP') + '（' + _handoffPayload.netProfitRate + '%）';
+    var sumEl = gv('handoff-modal-summary');
+    if(sumEl) sumEl.textContent = summaryLines;
 
-    if(!confirm(confirmMsg)) return;
-
-    /* ── localStorage 保存 ── */
-    var handoff = [];
-    try {
-      var raw    = localStorage.getItem('usGlassEstimateHandoff');
-      var parsed = JSON.parse(raw || '[]');
-      handoff = Array.isArray(parsed) ? parsed : [parsed];
-    } catch(e){ handoff = []; }
-    handoff.push(payload);
-    localStorage.setItem('usGlassEstimateHandoff', JSON.stringify(handoff));
-
-    /* ── 保存確認 ── */
-    var saved = localStorage.getItem('usGlassEstimateHandoff');
-    if(!saved){
-      alert('現場管理へ送るデータの保存に失敗しました。');
-      return;
-    }
-
-    /* ── 管理アプリへ画面遷移 ── */
-    alert('現場管理へ送信しました。管理アプリを開きます。');
-    window.location.href = MANAGER_URL + '?handoff=1';
+    var modal = gv('handoffModal');
+    if(modal) modal.style.display = 'flex';
 
   } catch(e){
     console.error('現場管理送信エラー:', e);
     alert('送信でエラーが発生しました：' + (e.message || e));
   }
+}
+
+function closeHandoffModal(){
+  var modal = gv('handoffModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function copyHandoffData(){
+  if(!_handoffPayload){ alert('先に「現場管理に送る」を押してください。'); return; }
+  var json = JSON.stringify(_handoffPayload, null, 2);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(json).then(function(){
+      alert('送信データをクリップボードにコピーしました。\n管理アプリを開いて取り込んでください。');
+    }).catch(function(){
+      _fallbackCopyText(json);
+    });
+  } else {
+    _fallbackCopyText(json);
+  }
+}
+
+function _fallbackCopyText(text){
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
+    alert('送信データをクリップボードにコピーしました。\n管理アプリを開いて取り込んでください。');
+  } catch(e){
+    alert('コピーに失敗しました。\n\n以下のテキストを手動でコピーしてください：\n\n' + text);
+  }
+  document.body.removeChild(ta);
+}
+
+function downloadHandoffJSON(){
+  if(!_handoffPayload){ alert('先に「現場管理に送る」を押してください。'); return; }
+  var json = JSON.stringify(_handoffPayload, null, 2);
+  var now = new Date();
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+  var ts  = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
+            + '_' + pad(now.getHours()) + '-' + pad(now.getMinutes());
+  var fileName = 'usglass_handoff_' + ts + '.json';
+  var blob = new Blob([json], {type:'application/json'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+}
+
+function openManagerApp(){
+  window.open(MANAGER_URL, '_blank');
 }
 
 function saveQuoteHTML(){
@@ -2509,10 +2579,16 @@ function saveGoogleClientId(){
   localStorage.setItem('usglass_google_client_id', getGoogleClientId());
 }
 
+var DEFAULT_GOOGLE_CLIENT_ID = '447526128143-2g4cdenfgcvmd7pmf6le1uruddg0a4im.apps.googleusercontent.com';
+
 function loadGoogleClientId(){
   var saved = localStorage.getItem('usglass_google_client_id') || '';
+  var clientId = saved || DEFAULT_GOOGLE_CLIENT_ID;
   var el = gv('google-client-id');
-  if(el && saved) el.value = saved;
+  if(el) el.value = clientId;
+  if(!saved && clientId){
+    localStorage.setItem('usglass_google_client_id', clientId);
+  }
 }
 
 function updateDriveSyncLabel(){
