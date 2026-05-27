@@ -184,6 +184,16 @@ tfoot td.l{text-align:left}
 .btn-reset-est{background:#bf360c;color:#fff;border:none;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:800;font-family:inherit;min-height:48px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-reset-est:active{background:#8d1b0a}
 .bottom-action-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.import-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200002;padding:16px;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center}
+.import-modal-inner{background:#fff;border-radius:14px;max-width:560px;width:100%;margin:24px auto;padding:22px}
+.import-modal h3{margin:0 0 12px;color:#0d2b50;font-size:17px}
+.import-modal-guide{font-size:12px;color:#555;margin:0 0 14px;line-height:1.6}
+.import-textarea{width:100%;box-sizing:border-box;min-height:130px;border:1.5px solid #b0c4d8;border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;resize:vertical;-webkit-appearance:none}
+.import-modal-msg{font-size:13px;padding:10px 13px;border-radius:7px;margin:10px 0 0;line-height:1.5}
+.import-modal-msg.ok{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7}
+.import-modal-msg.err{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
+.import-sec-label{font-size:12px;font-weight:800;color:#333;margin:0 0 6px;display:block}
+.import-sec{margin-bottom:14px}
 .drive-sync-lbl{font-size:12px;color:#555;margin-left:auto}
 .sblock-full{grid-column:1/-1}
 
@@ -552,6 +562,7 @@ tfoot td.l{text-align:left}
     <button type="button" id="saveAsNewBtn" class="btn-preview" onclick="saveAsNewProject()">別案件として保存</button>
     <button type="button" id="loadProjectBtn" class="btn-preview" onclick="showSavedProjects()">案件を呼び出し</button>
     <button type="button" id="saveQuoteBtn" class="btn-preview" onclick="saveQuoteHTML()">見積書を保存</button>
+    <button type="button" id="importDrawingBtn" class="btn-preview" onclick="openImportModal()">JSON取込</button>
     <button type="button" id="sendToManagerBtn" class="btn-send-manager" onclick="sendToManager()">現場管理に送る</button>
     <button type="button" id="pdfBtn" class="btn-pdf" onclick="printPDF()">PDF出力（A4 横）</button>
   </div>
@@ -590,6 +601,37 @@ tfoot td.l{text-align:left}
       <button type="button" onclick="hideSavedProjects()">閉じる</button>
     </div>
     <div id="projectList"></div>
+  </div>
+</div>
+
+<!-- JSON取込モーダル -->
+<div id="importDrawingModal" class="import-modal no-print" style="display:none" onclick="if(event.target===this)closeImportModal()">
+  <div class="import-modal-inner">
+    <h3>図面拾い出し JSON 取込</h3>
+    <p class="import-modal-guide">図面拾い出しツールで出力した「積算ツール取込用JSON」を読み込みます。</p>
+
+    <div class="import-sec">
+      <span class="import-sec-label">JSONファイルを選択</span>
+      <input type="file" id="import-json-file" accept=".json,application/json" style="font-size:13px;width:100%">
+    </div>
+
+    <div class="import-sec">
+      <span class="import-sec-label">またはJSONを貼り付け</span>
+      <textarea id="import-json-text" class="import-textarea" placeholder='{"app":"US_GLASS_DRAWING_TAKEOFF","items":[{"symbol":"AW1","width_mm":770,...}]}'></textarea>
+    </div>
+
+    <div class="import-sec" style="margin-bottom:10px">
+      <span class="import-sec-label">取込方法</span>
+      <label style="font-size:14px;margin-right:20px;cursor:pointer"><input type="radio" name="importMode" value="append" checked> 既存明細に追加</label>
+      <label style="font-size:14px;cursor:pointer"><input type="radio" name="importMode" value="replace"> 全明細を置き換え</label>
+    </div>
+
+    <div id="import-modal-msg" class="import-modal-msg" style="display:none"></div>
+
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button type="button" onclick="doImportDrawingJSON()" class="btn-hm btn-hm-copy" style="flex:1;margin:0">取り込む</button>
+      <button type="button" onclick="closeImportModal()" class="btn-hm btn-hm-close" style="flex:0;min-width:90px;margin:0">閉じる</button>
+    </div>
   </div>
 </div>
 
@@ -1396,6 +1438,173 @@ async function printPDF(){
 /* ══════════════════════════════════════════════
    現場管理アプリへのデータ連携
 ══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════
+   図面拾い出し JSON 取込
+══════════════════════════════════════════════ */
+var ALL_GLASS_TYPES = (function(){
+  return ['FL2','FL3','FL5','FL6','FL8','FL10','FL12',
+          'F6','Fw','pw',
+          'グリーンラル6','グリーンラル8',
+          'スリガラス3','スリガラス5','スリガラス6',
+          'Yカガミ3','Yカガミ5','Yカガミ6',
+          '3+3透明','4+4透明','5+5透明','3+3乳半','4+4乳半',
+          'ラミブロック3+3透明','ラミブロック4+4透明',
+          'ラミブロック3+3乳半','ラミブロック4+4乳半',
+          '耐熱5','耐熱8',
+          '自由入力','複層ガラス','LOW-E複層','特注品'];
+})();
+
+function _convertDrawingItem(item){
+  /* ガラス種類 */
+  var glassType = String(item.glass_type || 'FL5').trim();
+  var customName = '';
+  if(ALL_GLASS_TYPES.indexOf(glassType) < 0){
+    customName = glassType;
+    glassType  = '自由入力';
+  }
+
+  /* 留め方: ビード or コーキング */
+  var fix = 'caulking';
+  if(item.fixing){
+    var f = String(item.fixing).toLowerCase();
+    if(f.indexOf('ビード') >= 0 || f.indexOf('bead') >= 0 || f.indexOf('glazing') >= 0) fix = 'bead';
+  }
+
+  /* 取り外し */
+  var rem = '0';
+  if(item.remove){
+    var r = String(item.remove);
+    if(r === 'あり' || r === '1' || r.toLowerCase() === 'yes' || r.toLowerCase() === 'true') rem = '1';
+  }
+
+  /* 施工あり/なし → constRate 上書き */
+  var constRate = '';
+  if(item.work){
+    var w = String(item.work);
+    if(w === 'なし' || w === '施工なし' || w === '0' || w.toLowerCase() === 'no') constRate = '0';
+  }
+
+  return {
+    fixtureNo:  String(item.symbol || ''),
+    w:          String(item.width_mm  || ''),
+    h:          String(item.height_mm || ''),
+    q:          String(item.qty || 1),
+    g:          glassType,
+    customName: customName,
+    fix:        fix,
+    rem:        rem,
+    fire:       '0',
+    ckRemoval:  '0',
+    caulkSide:  'double',
+    matScope:   'per_unit',
+    disposal:   '0',
+    priceMode:  'sqm',
+    constRate:  constRate,
+    customSqm:  0, customMat: 0, customSell: 0, customMatC: 0
+  };
+}
+
+function openImportModal(){
+  var fi = gv('import-json-file');  if(fi) fi.value = '';
+  var ta = gv('import-json-text');  if(ta) ta.value = '';
+  var msg = gv('import-modal-msg');
+  if(msg){ msg.style.display = 'none'; msg.textContent = ''; msg.className = 'import-modal-msg'; }
+  var modal = gv('importDrawingModal');
+  if(modal) modal.style.display = 'flex';
+}
+
+function closeImportModal(){
+  var modal = gv('importDrawingModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function doImportDrawingJSON(){
+  var msgEl = gv('import-modal-msg');
+  function showMsg(text, isErr){
+    if(!msgEl) return;
+    msgEl.className = 'import-modal-msg ' + (isErr ? 'err' : 'ok');
+    msgEl.textContent = text;
+    msgEl.style.display = '';
+  }
+
+  var fileEl = gv('import-json-file');
+  var textEl = gv('import-json-text');
+  var modeEl = document.querySelector('input[name="importMode"]:checked');
+  var mode   = modeEl ? modeEl.value : 'append';
+
+  function processJSON(jsonStr){
+    var data;
+    try { data = JSON.parse(jsonStr.trim()); }
+    catch(e){
+      showMsg('JSONの形式が正しくありません：' + e.message, true);
+      return;
+    }
+
+    if(!data.items || !Array.isArray(data.items)){
+      showMsg('JSONに "items" 配列が見つかりません。形式を確認してください。', true);
+      return;
+    }
+    if(data.items.length === 0){
+      showMsg('items が空です。', true);
+      return;
+    }
+
+    /* 置き換えモード */
+    if(mode === 'replace'){
+      var box = gv('row-cards');
+      if(box) box.innerHTML = '';
+      rid = 0;
+      currentProjectId = null;
+      updateSaveButtonLabel();
+    }
+
+    /* 各アイテムを行へ */
+    var added = 0;
+    data.items.forEach(function(item){
+      try {
+        addRow();
+        var cards = document.querySelectorAll('.row-card');
+        applyRowData(cards[cards.length - 1], _convertDrawingItem(item));
+        added++;
+      } catch(e){ /* 1行失敗しても続行 */ }
+    });
+
+    /* 案件名（未入力時のみ） */
+    if(data.projectName){
+      var pn = gv('pname');
+      if(pn && !pn.value) pn.value = data.projectName;
+    }
+
+    calc();
+
+    var msg = added + '件を' + (mode === 'replace' ? '置き換えで' : '追加で') + '読み込みました。';
+    if(data.projectName) msg += '（案件：' + data.projectName + '）';
+    showMsg(msg, false);
+
+    setTimeout(function(){
+      closeImportModal();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }, 1400);
+  }
+
+  /* ファイル優先 */
+  if(fileEl && fileEl.files && fileEl.files.length > 0){
+    var reader = new FileReader();
+    reader.onload  = function(e){ processJSON(e.target.result); };
+    reader.onerror = function(){  showMsg('ファイルの読み込みに失敗しました。', true); };
+    reader.readAsText(fileEl.files[0], 'utf-8');
+    return;
+  }
+
+  /* テキストエリア */
+  var text = textEl ? textEl.value.trim() : '';
+  if(!text){
+    showMsg('JSONファイルを選択するか、テキストエリアにJSONを貼り付けてください。', true);
+    return;
+  }
+  processJSON(text);
+}
+
 var MANAGER_URL = 'https://usglassworks.github.io/us-glass-estimate-manager/';
 
 var _handoffPayload = null;
@@ -1997,6 +2206,7 @@ function bindButtons(){
   safe('importMasterBtn',   importMasterPrices);
   safe('sendToManagerBtn',  sendToManager);
   safe('resetEstimateBtn',  resetEstimate);
+  safe('importDrawingBtn',  openImportModal);
 }
 
 window.addEventListener('DOMContentLoaded', function(){ bindButtons(); });
