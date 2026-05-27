@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>USG 図面拾い出しツール</title>
+<style>
+:root {
+  --primary: #1a4f8b;
+  --primary-light: #2563a8;
+  --primary-dark: #13396b;
+  --secondary: #3a7ca5;
+  --accent: #0ea5c8;
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --border: #d1d9e0;
+  --text: #1a1f2e;
+  --text-light: #64748b;
+  --text-muted: #94a3b8;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+  --radius: 8px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.10);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic UI','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* ── Header ─────────────────────────────── */
+.app-header{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 60%,var(--primary-light) 100%);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25)}
+.app-header h1{font-size:15px;font-weight:700;letter-spacing:.4px;flex:1}
+.app-header .subtitle{font-size:11px;opacity:.65}
+
+/* ── Tabs ────────────────────────────────── */
+.tab-nav{display:flex;background:var(--primary-dark);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab-nav::-webkit-scrollbar{display:none}
+.tab-btn{padding:11px 15px;color:rgba(255,255,255,.6);border:none;background:none;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;border-bottom:3px solid transparent;font-family:inherit}
+.tab-btn.active{color:#fff;border-bottom-color:#5eb3f0;background:rgba(255,255,255,.07)}
+.tab-btn:hover:not(.active){color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
+
+.tab-content{display:none;padding:14px 14px 24px;max-width:1280px;margin:0 auto}
+.tab-content.active{display:block}
+
+/* ── Cards ───────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-title{font-size:12.5px;font-weight:700;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+
+/* ── Buttons ─────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 15px;border-radius:var(--radius);border:none;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,opacity .15s,box-shadow .15s;white-space:nowrap;min-height:40px;font-family:inherit;text-decoration:none}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-light)}
+.btn-secondary{background:var(--secondary);color:#fff}
+.btn-secondary:hover{opacity:.88}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{opacity:.88}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg);border-color:#aab}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{opacity:.88}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{opacity:.88}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid #fca5a5;color:var(--danger);font-size:12px}
+.btn-ghost:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:6px 11px;font-size:12px;min-height:32px}
+.btn-group{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+
+/* ── Forms ───────────────────────────────── */
+input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,79,139,.1)}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.form-row label{font-size:13px;color:var(--text-light);white-space:nowrap;min-width:72px}
+
+/* ── File Upload ─────────────────────────── */
+.file-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg)}
+.file-drop:hover,.file-drop.drag-over{border-color:var(--primary);background:#e8f0fb}
+.file-drop svg{display:block;margin:0 auto 10px}
+.file-drop .drop-label{font-size:13px;color:var(--text-light)}
+.file-drop .drop-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+.file-name-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#e8f0fb;border-radius:var(--radius);font-size:13px;margin-top:8px;color:var(--primary-dark)}
+
+/* ── Preview ─────────────────────────────── */
+#imagePreview{max-width:100%;max-height:520px;border-radius:var(--radius);border:1px solid var(--border);display:block;margin-top:8px}
+#pdfCanvas{max-width:100%;border-radius:var(--radius);border:1px solid var(--border);display:block}
+.pdf-ctrl{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.page-info{padding:6px 10px;font-size:13px;color:var(--text-light);background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);min-width:70px;text-align:center}
+
+/* ── Table ───────────────────────────────── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;min-width:960px;border-collapse:collapse;font-size:12px}
+th{background:var(--primary);color:#fff;padding:8px 5px;text-align:center;font-weight:600;white-space:nowrap;font-size:11px;position:sticky;top:0;z-index:2}
+th:first-child{border-radius:var(--radius) 0 0 0}
+th:last-child{border-radius:0 var(--radius) 0 0}
+td{padding:4px 3px;border-bottom:1px solid #edf0f5;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f4f7fc}
+td input[type=text],td input[type=number]{padding:4px 6px;font-size:12px;border-radius:5px}
+td select{padding:4px 4px;font-size:11.5px;border-radius:5px}
+td.num{text-align:right;color:var(--text-light);font-size:11px;padding-right:8px;white-space:nowrap}
+td.ctr{text-align:center}
+tfoot td{background:#eef3fb;font-weight:700;padding:8px 5px;border-top:2px solid var(--primary);font-size:12px}
+tfoot td.num{color:var(--primary-dark)}
+
+/* ── Summary bar ─────────────────────────── */
+.summary-bar{display:flex;flex-wrap:wrap;gap:18px;padding:10px 14px;background:#eef3fb;border-radius:var(--radius);margin-bottom:12px;border:1px solid #c9d9f0}
+.sum-item{display:flex;align-items:baseline;gap:5px}
+.sum-label{font-size:11.5px;color:var(--text-light)}
+.sum-value{font-size:15px;font-weight:700;color:var(--primary-dark)}
+.sum-unit{font-size:11px;color:var(--text-muted)}
+
+/* ── OCR ─────────────────────────────────── */
+#ocrInput{height:200px;font-family:'Courier New',Courier,monospace;font-size:13px;resize:vertical;background:#fafbfc}
+.example-box{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-light);line-height:1.7;white-space:pre}
+
+/* ── JSON ────────────────────────────────── */
+#jsonOutput{font-family:'Courier New',Courier,monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;border:none;border-radius:var(--radius);padding:16px;height:420px;resize:vertical;tab-size:2;width:100%}
+
+/* ── Notices ─────────────────────────────── */
+.notice{padding:9px 13px;border-radius:var(--radius);font-size:12.5px;margin-bottom:10px}
+.notice-info{background:#e0f2fe;border-left:3px solid var(--accent);color:#0369a1}
+.notice-success{background:#dcfce7;border-left:3px solid var(--success);color:#15803d}
+.notice-warn{background:#fef3c7;border-left:3px solid var(--warning);color:#92400e}
+
+/* ── OCR mode radios ─────────────────────── */
+.radio-group{display:flex;gap:14px;align-items:center}
+.radio-group label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer}
+
+/* ── Toast ───────────────────────────────── */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:9999;box-shadow:var(--shadow-md);pointer-events:none;transition:opacity .3s}
+.toast-success{background:#16a34a;color:#fff}
+.toast-info{background:var(--primary);color:#fff}
+.toast-error{background:var(--danger);color:#fff}
+
+/* ── Responsive ──────────────────────────── */
+@media(max-width:640px){
+  .app-header h1{font-size:14px}
+  .tab-btn{padding:10px 12px;font-size:12px}
+  .btn{padding:10px 13px;font-size:12.5px}
+  .card{padding:12px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ Header ═══════════════════════════════════════════ -->
+<header class="app-header">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <path d="M3 9h18M9 21V9"/>
+  </svg>
+  <h1>USG 図面拾い出しツール</h1>
+  <span class="subtitle">v1.0</span>
+</header>
+
+<!-- ═══ Tabs ══════════════════════════════════════════════ -->
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" onclick="switchTab(this,'drawing')">📐 図面確認</button>
+  <button class="tab-btn" onclick="switchTab(this,'ocr')">✏️ OCR / 手入力</button>
+  <button class="tab-btn" onclick="switchTab(this,'table')">📋 明細編集</button>
+  <button class="tab-btn" onclick="switchTab(this,'json')">📤 JSON出力</button>
+</nav>
+
+<!-- ═══ Tab 1: 図面確認 ══════════════════════════════════ -->
+<div id="tab-drawing" class="tab-content active">
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      ファイル読み込み
+    </div>
+    <div class="file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <div class="drop-label">タップ / クリック、またはここにドラッグ&ドロップ</div>
+      <div class="drop-sub">PDF・JPEG・PNG に対応</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" style="display:none">
+    <div id="fileNameRow" class="file-name-row" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      <span id="fileNameText" style="font-weight:600"></span>
+      <span id="fileSizeText" style="color:var(--text-muted);font-size:11px;margin-left:auto"></span>
+    </div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      プレビュー
+    </div>
+
+    <!-- Image -->
+    <div id="imgWrap" style="display:none">
+      <img id="imagePreview" alt="図面プレビュー">
+    </div>
+
+    <!-- PDF -->
+    <div id="pdfWrap" style="display:none">
+      <div class="pdf-ctrl">
+        <button class="btn btn-primary" id="btnOpenPdf" onclick="openPdfExternal()">🔗 PDFを別タブで開く</button>
+        <button class="btn btn-outline btn-sm" onclick="pdfPrev()" id="pdfPrevBtn">◀ 前ページ</button>
+        <span class="page-info" id="pageInfo">－ / －</span>
+        <button class="btn btn-outline btn-sm" onclick="pdfNext()" id="pdfNextBtn">次ページ ▶</button>
+      </div>
+      <canvas id="pdfCanvas" style="display:none"></canvas>
+      <div class="notice notice-info" id="pdfFallback" style="display:none">
+        ⚠️ PDFのインライン表示ができませんでした。「PDFを別タブで開く」ボタンで内容を確認してください。
+      </div>
+    </div>
+  </div>
+
+  <div class="notice notice-info">
+    💡 図面を確認しながら「OCR / 手入力」タブで建具寸法を入力してください。
+  </div>
+</div>
+
+<!-- ═══ Tab 2: OCR / 手入力 ══════════════════════════════ -->
+<div id="tab-ocr" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">📝 入力フォーマット</div>
+    <div class="example-box">AW1 770×1032=4 FL6
+AW2 585×1032=1 FL6
+WD1 900×2000=4 スリガラス3ミリ
+AE1 961×2012=4 FL8
+aw5 420×410=2 f6</div>
+    <div style="font-size:11.5px;color:var(--text-light);margin-top:8px;line-height:1.9">
+      ・形式：<b>記号 幅×高さ=枚数 ガラス種別</b>（ガラス種別は省略可）<br>
+      ・「×」「x」「Ｘ」いずれも可（全角・半角OK）<br>
+      ・記号は自動で大文字化、ガラス種別は自動正規化<br>
+      ・複数行をまとめて貼り付け可能
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✏️ OCR 貼り付け / 手入力</div>
+    <textarea id="ocrInput" placeholder="ここに図面のOCR結果または手入力テキストを貼り付けてください…
+
+AW1 770×1032=4 FL6
+WD1 900×2000=4 スリガラス3ミリ"></textarea>
+
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <div class="radio-group">
+        <label><input type="radio" name="appendMode" value="append" checked> <span>既存に追加</span></label>
+        <label><input type="radio" name="appendMode" value="replace"> <span>置き換え</span></label>
+      </div>
+      <button class="btn btn-primary" onclick="convertOCR()" style="margin-left:auto">
+        ✅ 明細へ変換
+      </button>
+    </div>
+    <div id="ocrMsg" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔤 ガラス種別 正規化ルール</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px 20px;font-size:12px">
+      <div>fl5 / FL5 → <b>FL5</b></div>
+      <div>fl6 / FL6 → <b>FL6</b></div>
+      <div>fl8 / FL8 → <b>FL8</b></div>
+      <div>f6 → <b>F6</b></div>
+      <div>fw → <b>Fw</b></div>
+      <div>pw → <b>PW</b></div>
+      <div>スリガラス3ミリ → <b>スリガラス3</b></div>
+      <div>LOW-E / ロー → <b>LOW-E</b></div>
+      <div>複層 → <b>複層</b></div>
+      <div>型板 → <b>型板</b></div>
+      <div>網入 → <b>網入り</b></div>
+      <div>ミラー → <b>ミラー</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Tab 3: 明細編集 ═══════════════════════════════════ -->
+<div id="tab-table" class="tab-content">
+
+  <div class="card" style="padding:10px 14px">
+    <div class="form-row" style="margin-bottom:0">
+      <label>現場名</label>
+      <input type="text" id="projectName" placeholder="例：渋谷ビル3F改修工事" oninput="saveData()" style="max-width:400px">
+    </div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="addRow()">＋ 行追加</button>
+    <button class="btn btn-outline" onclick="sortBySymbol()">🔤 記号順</button>
+    <button class="btn btn-danger" onclick="resetAll()">🗑 全リセット</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearSavedData()" style="margin-left:auto">保存データ削除</button>
+  </div>
+
+  <div class="summary-bar">
+    <div class="sum-item">
+      <span class="sum-label">件数</span>
+      <span class="sum-value" id="sumCount">0</span>
+      <span class="sum-unit">種</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-label">合計枚数</span>
+      <span class="sum-value" id="sumQty">0</span>
+      <span class="sum-unit">枚</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-label">合計面積</span>
+      <span class="sum-value" id="sumArea">0.000</span>
+      <span class="sum-unit">㎡</span>
+    </div>
+    <div class="sum-item">
+      <span class="sum-label">コーキング計</span>
+      <span class="sum-value" id="sumCaulk">0.00</span>
+      <span class="sum-unit">M</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="itemTable">
+      <thead>
+        <tr>
+          <th style="min-width:72px">建具記号</th>
+          <th style="min-width:62px">W(mm)</th>
+          <th style="min-width:62px">H(mm)</th>
+          <th style="min-width:48px">枚数</th>
+          <th style="min-width:115px">ガラス種別</th>
+          <th style="min-width:95px">留め方</th>
+          <th style="min-width:95px">施工</th>
+          <th style="min-width:108px">取り外し</th>
+          <th style="min-width:95px">備考</th>
+          <th style="min-width:68px">面積/枚㎡</th>
+          <th style="min-width:68px">合計㎡</th>
+          <th style="min-width:72px">コーキングM</th>
+          <th style="min-width:42px"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="padding-left:8px">合計</td>
+          <td id="footQty" class="num"></td>
+          <td colspan="5"></td>
+          <td></td>
+          <td id="footArea" class="num"></td>
+          <td id="footCaulk" class="num"></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+    ※ 入力内容はブラウザに自動保存されます。ページを閉じても残ります。
+  </div>
+</div>
+
+<!-- ═══ Tab 4: JSON 出力 ════════════════════════════════════ -->
+<div id="tab-json" class="tab-content">
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="generateJSON()">🔄 JSON生成</button>
+    <button class="btn btn-outline" onclick="copyJSON()">📋 コピー</button>
+    <button class="btn btn-success" onclick="downloadJSON()">💾 JSON保存</button>
+    <button class="btn btn-secondary" onclick="downloadCSV()">📊 CSV保存</button>
+    <button class="btn btn-outline" onclick="document.getElementById('jsonImportInput').click()">📂 JSONから復元</button>
+    <input type="file" id="jsonImportInput" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+  </div>
+
+  <div class="notice notice-info" style="font-size:12px">
+    「JSON生成」を押すと現在の明細が JSON 形式で表示されます。「JSONから復元」では別のセッションで保存した JSON を読み込んで明細を復元できます。
+  </div>
+
+  <textarea id="jsonOutput" readonly placeholder="「JSON生成」ボタンを押してください…"></textarea>
+</div>
+
+<!-- ═══ Toast ══════════════════════════════════════════════ -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+/* ================================================================
+   PDF.js — CDN ロード（失敗してもアプリは動く）
+   ================================================================ */
+let pdfJsReady = false;
+let pdfDocObj = null;
+let pdfCurrentPage = 1;
+let currentFileURL = null;
+
+(function loadPdfJs() {
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload = () => {
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfJsReady = true;
+    }
+  };
+  s.onerror = () => { pdfJsReady = false; };
+  document.head.appendChild(s);
+})();
+
+/* ================================================================
+   State
+   ================================================================ */
+let items = [];   // [{id,symbol,width,height,qty,glassType,fixing,work,remove,note,areaEach,areaTotal,caulkM}]
+
+/* ================================================================
+   Utilities
+   ================================================================ */
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/** 全角英数→半角 */
+function toHalfWidth(s) {
+  return s
+    .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/　/g, ' ')
+    .replace(/×/g, 'x');   // ×(U+00D7) → x
+}
+
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success', duration = 2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type}`;
+  t.style.display = 'block';
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { t.style.display = 'none'; }, 400); }, duration);
+}
+
+/* ================================================================
+   Calculations
+   ================================================================ */
+function calcItem(item) {
+  const w = parseFloat(item.width) || 0;
+  const h = parseFloat(item.height) || 0;
+  const q = parseInt(item.qty) || 0;
+  item.areaEach  = (w / 1000) * (h / 1000);
+  item.areaTotal = item.areaEach * q;
+  item.caulkM    = (item.fixing === 'ビード') ? 0 : ((w + h) / 1000) * 4 * q;
+  return item;
+}
+
+/* ================================================================
+   Glass type normalizer
+   ================================================================ */
+function normalizeGlass(raw) {
+  if (!raw) return '';
+  let s = raw.trim();
+  // FL5/FL6/FL8 etc.
+  if (/^fl\d+$/i.test(s)) return s.toUpperCase();
+  // F6/F5 etc. (without L)
+  if (/^f\d+$/i.test(s)) return 'F' + s.slice(1);
+  // Fw
+  if (/^fw\d*$/i.test(s)) return 'Fw' + (s.slice(2) || '');
+  // PW
+  if (/^pw\d*$/i.test(s)) return 'PW' + (s.slice(2) || '');
+  // スリガラスNミリ
+  s = s.replace(/スリガラス(\d+)ミリ?/g, 'スリガラス$1');
+  // 網入
+  if (/網入/.test(s)) return s.replace('網入り','網入り').replace('網入','網入り');
+  // LOW-E
+  if (/low[\-－]?e/i.test(s) || /ローe/i.test(s) || /ロー[エe]/i.test(s)) return 'LOW-E';
+  // 複層 → 複層（そのまま）
+  // 型板 → 型板（そのまま）
+  // ミラー → ミラー（そのまま）
+  return s;
+}
+
+/* ================================================================
+   OCR Parser
+   ================================================================ */
+function parseOCRLine(rawLine) {
+  const line = toHalfWidth(rawLine.trim());
+  if (!line) return null;
+  // Pattern: SYMBOL WIDTHxHEIGHT=QTY [GLASS_TYPE]
+  // e.g. AW1 770x1032=4 FL6
+  const re = /^([A-Za-z]+\d+[\w\-]*)\s+(\d+)\s*[xX×]\s*(\d+)\s*=\s*(\d+)\s*(.*)?$/;
+  const m = line.match(re);
+  if (!m) return null;
+  return calcItem({
+    id:        genId(),
+    symbol:    m[1].toUpperCase(),
+    width:     parseInt(m[2]),
+    height:    parseInt(m[3]),
+    qty:       parseInt(m[4]),
+    glassType: normalizeGlass((m[5] || '').trim()),
+    fixing:    '不明',
+    work:      '施工あり',
+    remove:    'なし',
+    note:      ''
+  });
+}
+
+/* ================================================================
+   Tabs
+   ================================================================ */
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'table') renderTable();
+  if (name === 'json')  generateJSON();
+}
+
+/* ================================================================
+   File handling
+   ================================================================ */
+const fileInput  = document.getElementById('fileInput');
+const dropZone   = document.getElementById('dropZone');
+
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',      e  => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  // Show name
+  document.getElementById('fileNameRow').style.display = 'flex';
+  document.getElementById('fileNameText').textContent = file.name;
+  document.getElementById('fileSizeText').textContent = formatSize(file.size);
+  document.getElementById('previewCard').style.display = 'block';
+
+  if (currentFileURL) URL.revokeObjectURL(currentFileURL);
+  currentFileURL = URL.createObjectURL(file);
+
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf' || file.type === 'application/pdf') {
+    document.getElementById('imgWrap').style.display = 'none';
+    document.getElementById('pdfWrap').style.display = 'block';
+    document.getElementById('btnOpenPdf').onclick = openPdfExternal;
+    loadPDF(currentFileURL);
+  } else {
+    document.getElementById('pdfWrap').style.display = 'none';
+    document.getElementById('imgWrap').style.display = 'block';
+    document.getElementById('imagePreview').src = currentFileURL;
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function openPdfExternal() {
+  if (currentFileURL) window.open(currentFileURL, '_blank');
+}
+
+/* ================================================================
+   PDF.js renderer
+   ================================================================ */
+async function loadPDF(url) {
+  const canvas   = document.getElementById('pdfCanvas');
+  const fallback = document.getElementById('pdfFallback');
+  const pageInfo = document.getElementById('pageInfo');
+
+  if (!pdfJsReady) {
+    // Give PDF.js a moment to finish loading if the file was chosen very quickly
+    await new Promise(r => setTimeout(r, 1200));
+  }
+
+  if (!pdfJsReady) {
+    canvas.style.display   = 'none';
+    fallback.style.display = 'block';
+    return;
+  }
+
+  try {
+    pdfDocObj      = await pdfjsLib.getDocument(url).promise;
+    pdfCurrentPage = 1;
+    pageInfo.textContent = `1 / ${pdfDocObj.numPages}`;
+    canvas.style.display   = 'block';
+    fallback.style.display = 'none';
+    await renderPDFPage(pdfCurrentPage);
+  } catch (err) {
+    console.warn('PDF.js error:', err);
+    canvas.style.display   = 'none';
+    fallback.style.display = 'block';
+  }
+}
+
+async function renderPDFPage(num) {
+  if (!pdfDocObj) return;
+  try {
+    const page    = await pdfDocObj.getPage(num);
+    const canvas  = document.getElementById('pdfCanvas');
+    const ctx     = canvas.getContext('2d');
+    const maxW    = canvas.parentElement.clientWidth || 760;
+    const vp0     = page.getViewport({ scale: 1 });
+    const scale   = Math.min((maxW - 2) / vp0.width, 2.5);
+    const vp      = page.getViewport({ scale });
+    canvas.width  = vp.width;
+    canvas.height = vp.height;
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    document.getElementById('pageInfo').textContent = `${num} / ${pdfDocObj.numPages}`;
+  } catch (err) { console.warn('render error', err); }
+}
+
+async function pdfPrev() {
+  if (!pdfDocObj || pdfCurrentPage <= 1) return;
+  pdfCurrentPage--;
+  await renderPDFPage(pdfCurrentPage);
+}
+async function pdfNext() {
+  if (!pdfDocObj || pdfCurrentPage >= pdfDocObj.numPages) return;
+  pdfCurrentPage++;
+  await renderPDFPage(pdfCurrentPage);
+}
+
+/* ================================================================
+   OCR Convert
+   ================================================================ */
+function convertOCR() {
+  const text   = document.getElementById('ocrInput').value;
+  const lines  = text.split('\n');
+  const ok     = [];
+  const failed = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const item = parseOCRLine(line);
+    if (item) ok.push(item);
+    else if (line.trim()) failed.push(line.trim());
+  }
+
+  const mode = document.querySelector('input[name="appendMode"]:checked').value;
+  if (mode === 'replace') items = ok;
+  else items = [...items, ...ok];
+
+  saveData();
+
+  const msgEl = document.getElementById('ocrMsg');
+  if (ok.length > 0) {
+    const cls = failed.length ? 'notice notice-warn' : 'notice notice-success';
+    const extra = failed.length ? `<br>変換できなかった行(${failed.length}件)：${failed.slice(0,5).map(esc).join(' / ')}` : '';
+    msgEl.className = cls;
+    msgEl.innerHTML = `✅ ${ok.length} 件を変換しました` + extra;
+  } else {
+    msgEl.className = 'notice notice-warn';
+    msgEl.innerHTML = '⚠️ 変換できる行がありませんでした。フォーマットを確認してください。';
+  }
+  msgEl.style.display = 'block';
+
+  if (ok.length > 0) {
+    setTimeout(() => {
+      const btns = document.querySelectorAll('.tab-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      btns[2].classList.add('active');
+      document.getElementById('tab-table').classList.add('active');
+      renderTable();
+      showToast(`✅ ${ok.length} 件を明細に追加しました`);
+    }, 600);
+  }
+}
+
+/* ================================================================
+   Table Render
+   ================================================================ */
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  items.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.idx = idx;
+    tr.innerHTML = `
+      <td><input type="text" value="${esc(item.symbol)}" onchange="updateField(${idx},'symbol',this.value)" style="width:68px;text-transform:uppercase"></td>
+      <td><input type="number" value="${item.width || ''}" onchange="updateField(${idx},'width',this.value)" style="width:58px" min="1"></td>
+      <td><input type="number" value="${item.height || ''}" onchange="updateField(${idx},'height',this.value)" style="width:58px" min="1"></td>
+      <td><input type="number" value="${item.qty || ''}" onchange="updateField(${idx},'qty',this.value)" style="width:44px" min="1"></td>
+      <td><input type="text" value="${esc(item.glassType)}" onchange="updateField(${idx},'glassType',this.value)" style="width:108px"></td>
+      <td>
+        <select onchange="updateField(${idx},'fixing',this.value)" style="width:88px">
+          <option${item.fixing==='ビード'?' selected':''}>ビード</option>
+          <option${item.fixing==='コーキング'?' selected':''}>コーキング</option>
+          <option${item.fixing==='不明'?' selected':''}>不明</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="updateField(${idx},'work',this.value)" style="width:88px">
+          <option${item.work==='施工あり'?' selected':''}>施工あり</option>
+          <option${item.work==='施工なし'?' selected':''}>施工なし</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="updateField(${idx},'remove',this.value)" style="width:105px">
+          <option${item.remove==='なし'?' selected':''}>なし</option>
+          <option${item.remove==='あり'?' selected':''}>あり</option>
+          <option${item.remove==='取り外し込み'?' selected':''}>取り外し込み</option>
+        </select>
+      </td>
+      <td><input type="text" value="${esc(item.note || '')}" onchange="updateField(${idx},'note',this.value)" style="width:88px" placeholder="メモ"></td>
+      <td class="num" id="ae_${idx}">${(item.areaEach || 0).toFixed(3)}</td>
+      <td class="num" id="at_${idx}">${(item.areaTotal || 0).toFixed(3)}</td>
+      <td class="num" id="cm_${idx}">${(item.caulkM || 0).toFixed(2)}</td>
+      <td class="ctr"><button class="btn btn-ghost btn-sm" onclick="deleteRow(${idx})">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  updateSummary();
+}
+
+function updateField(idx, field, value) {
+  const item = items[idx];
+  if (!item) return;
+
+  if (['width','height','qty'].includes(field)) {
+    item[field] = parseInt(value) || 0;
+  } else if (field === 'symbol') {
+    item[field] = value.toUpperCase();
+  } else {
+    item[field] = value;
+  }
+
+  calcItem(item);
+  saveData();
+
+  // Update computed cells in-place
+  const ae = document.getElementById(`ae_${idx}`);
+  const at = document.getElementById(`at_${idx}`);
+  const cm = document.getElementById(`cm_${idx}`);
+  if (ae) ae.textContent = (item.areaEach  || 0).toFixed(3);
+  if (at) at.textContent = (item.areaTotal || 0).toFixed(3);
+  if (cm) cm.textContent = (item.caulkM    || 0).toFixed(2);
+
+  updateSummary();
+}
+
+function updateSummary() {
+  let totalQty = 0, totalArea = 0, totalCaulk = 0;
+  items.forEach(item => {
+    totalQty   += (parseInt(item.qty) || 0);
+    totalArea  += (item.areaTotal || 0);
+    totalCaulk += (item.caulkM    || 0);
+  });
+
+  document.getElementById('sumCount').textContent  = items.length;
+  document.getElementById('sumQty').textContent    = totalQty;
+  document.getElementById('sumArea').textContent   = totalArea.toFixed(3);
+  document.getElementById('sumCaulk').textContent  = totalCaulk.toFixed(2);
+  document.getElementById('footQty').textContent   = totalQty;
+  document.getElementById('footArea').textContent  = totalArea.toFixed(3);
+  document.getElementById('footCaulk').textContent = totalCaulk.toFixed(2);
+}
+
+function addRow() {
+  items.push(calcItem({
+    id: genId(), symbol: '', width: 0, height: 0, qty: 1,
+    glassType: '', fixing: '不明', work: '施工あり', remove: 'なし', note: ''
+  }));
+  saveData();
+  renderTable();
+  // Scroll to bottom of table
+  const wrap = document.querySelector('.table-wrap');
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+
+function deleteRow(idx) {
+  items.splice(idx, 1);
+  saveData();
+  renderTable();
+}
+
+function sortBySymbol() {
+  items.sort((a, b) => {
+    const sa = a.symbol || '';
+    const sb = b.symbol || '';
+    return sa.localeCompare(sb, 'ja');
+  });
+  saveData();
+  renderTable();
+  showToast('記号順に並び替えました', 'info');
+}
+
+function resetAll() {
+  if (!confirm('全明細を削除しますか？\nこの操作は元に戻せません。')) return;
+  items = [];
+  saveData();
+  renderTable();
+  showToast('リセットしました', 'info');
+}
+
+/* ================================================================
+   LocalStorage
+   ================================================================ */
+const LS_KEY = 'usg_takeoff_v1';
+
+function saveData() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      projectName: document.getElementById('projectName').value || '',
+      items:       items,
+      savedAt:     new Date().toISOString()
+    }));
+  } catch (e) { /* storage full or private mode */ }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.projectName) document.getElementById('projectName').value = data.projectName;
+    if (Array.isArray(data.items)) {
+      items = data.items.map(it => calcItem({
+        id:        it.id || genId(),
+        symbol:    it.symbol    || '',
+        width:     it.width     || 0,
+        height:    it.height    || 0,
+        qty:       it.qty       || 0,
+        glassType: it.glassType || '',
+        fixing:    it.fixing    || '不明',
+        work:      it.work      || '施工あり',
+        remove:    it.remove    || 'なし',
+        note:      it.note      || ''
+      }));
+    }
+  } catch (e) { /* ignore corrupt data */ }
+}
+
+function clearSavedData() {
+  if (!confirm('ブラウザに保存されているデータを削除しますか？\n現在の明細もクリアされます。')) return;
+  localStorage.removeItem(LS_KEY);
+  items = [];
+  document.getElementById('projectName').value = '';
+  renderTable();
+  showToast('保存データを削除しました', 'info');
+}
+
+/* ================================================================
+   JSON build / output
+   ================================================================ */
+function buildJSON() {
+  return {
+    app:         'US_GLASS_DRAWING_TAKEOFF',
+    version:     '1.0',
+    projectName: document.getElementById('projectName').value || '',
+    createdAt:   new Date().toISOString(),
+    items: items.map(it => ({
+      symbol:        it.symbol     || '',
+      width_mm:      parseInt(it.width)  || 0,
+      height_mm:     parseInt(it.height) || 0,
+      qty:           parseInt(it.qty)    || 0,
+      glass_type:    it.glassType  || '',
+      fixing:        it.fixing     || '',
+      work:          it.work       || '',
+      remove:        it.remove     || '',
+      area_m2_each:  parseFloat((it.areaEach  || 0).toFixed(3)),
+      area_m2_total: parseFloat((it.areaTotal || 0).toFixed(3)),
+      caulk_m:       parseFloat((it.caulkM    || 0).toFixed(2)),
+      note:          it.note       || ''
+    }))
+  };
+}
+
+function generateJSON() {
+  document.getElementById('jsonOutput').value = JSON.stringify(buildJSON(), null, 2);
+}
+
+function copyJSON() {
+  generateJSON();
+  const ta = document.getElementById('jsonOutput');
+  ta.select();
+  try {
+    const ok = document.execCommand('copy');
+    if (ok) { showToast('JSON をコピーしました', 'success'); return; }
+  } catch (_) {}
+  navigator.clipboard.writeText(ta.value)
+    .then(() => showToast('JSON をコピーしました', 'success'))
+    .catch(() => showToast('コピーに失敗しました。テキストを手動でコピーしてください。', 'error', 3500));
+}
+
+function downloadJSON() {
+  generateJSON();
+  const json = document.getElementById('jsonOutput').value;
+  const pn   = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
+  const fname = `${pn}_takeoff_${isoDate()}.json`;
+  blobDownload(new Blob([json], { type: 'application/json' }), fname);
+  showToast('JSON を保存しました');
+}
+
+function downloadCSV() {
+  const headers = ['建具記号','幅W(mm)','高さH(mm)','枚数','ガラス種別','留め方','施工','取り外し','面積/枚㎡','合計面積㎡','コーキングM','備考'];
+  const rows = items.map(it => [
+    it.symbol, it.width, it.height, it.qty,
+    it.glassType, it.fixing, it.work, it.remove,
+    (it.areaEach  || 0).toFixed(3),
+    (it.areaTotal || 0).toFixed(3),
+    (it.caulkM    || 0).toFixed(2),
+    it.note || ''
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+
+  const pn  = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
+  blobDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `${pn}_takeoff_${isoDate()}.csv`);
+  showToast('CSV を保存しました');
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.app && data.app !== 'US_GLASS_DRAWING_TAKEOFF') {
+        if (!confirm('このファイルはこのツール用ではない可能性があります。続けますか？')) return;
+      }
+      if (data.projectName) document.getElementById('projectName').value = data.projectName;
+      if (Array.isArray(data.items)) {
+        items = data.items.map(it => calcItem({
+          id:        genId(),
+          symbol:    it.symbol       || '',
+          width:     it.width_mm     || 0,
+          height:    it.height_mm    || 0,
+          qty:       it.qty          || 0,
+          glassType: it.glass_type   || '',
+          fixing:    it.fixing       || '不明',
+          work:      it.work         || '施工あり',
+          remove:    it.remove       || 'なし',
+          note:      it.note         || ''
+        }));
+        saveData();
+        // Go to table
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('tab-table').classList.add('active');
+        renderTable();
+        showToast(`✅ ${items.length} 件を読み込みました`);
+      } else {
+        showToast('items が見つかりません', 'error');
+      }
+    } catch (ex) {
+      showToast('JSON の読み込みに失敗しました: ' + ex.message, 'error', 4000);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+/* ================================================================
+   Helpers
+   ================================================================ */
+function isoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function blobDownload(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ================================================================
+   Init
+   ================================================================ */
+loadData();
+renderTable();
+</script>
+
+</body>
+</html>
