@@ -83,8 +83,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 .file-name-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#e8f0fb;border-radius:var(--radius);font-size:13px;margin-top:8px;color:var(--primary-dark)}
 
 /* ── Preview ─────────────────────────────── */
-#imagePreview{max-width:100%;max-height:520px;border-radius:var(--radius);border:1px solid var(--border);display:block;margin-top:8px}
-#pdfCanvas{max-width:100%;border-radius:var(--radius);border:1px solid var(--border);display:block}
+#imagePreview{max-width:100%;max-height:520px;border-radius:var(--radius);border:1px solid var(--border);display:block;margin-top:8px;position:relative;z-index:1}
+#pdfCanvas{max-width:100%;border-radius:var(--radius);border:1px solid var(--border);display:block;position:relative;z-index:1}
 .pdf-ctrl{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .page-info{padding:6px 10px;font-size:13px;color:var(--text-light);background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);min-width:70px;text-align:center}
 
@@ -112,7 +112,26 @@ tfoot td.num{color:var(--primary-dark)}
 .sum-unit{font-size:11px;color:var(--text-muted)}
 
 /* ── OCR ─────────────────────────────────── */
-#ocrInput{height:200px;font-family:'Courier New',Courier,monospace;font-size:13px;resize:vertical;background:#fafbfc}
+#ocrInput{
+  width:100%;
+  min-height:220px;
+  font-family:'Courier New',Courier,monospace;
+  font-size:16px;          /* 16px未満だとiOS Safariが自動ズームして入力を妨げる */
+  line-height:1.6;
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  background:#fff;
+  color:#111;
+  resize:vertical;
+  pointer-events:auto;
+  -webkit-user-select:text;
+  user-select:text;
+  position:relative;
+  z-index:10;
+  -webkit-appearance:none;
+  appearance:none;
+}
 .example-box{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-light);line-height:1.7;white-space:pre}
 
 /* ── JSON ────────────────────────────────── */
