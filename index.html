@@ -135,7 +135,13 @@ tfoot td.num{color:var(--primary-dark)}
 .example-box{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-light);line-height:1.7;white-space:pre}
 
 /* ── JSON ────────────────────────────────── */
-#jsonOutput{font-family:'Courier New',Courier,monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;border:none;border-radius:var(--radius);padding:16px;height:420px;resize:vertical;tab-size:2;width:100%}
+#jsonOutput,#jsonEstimateOutput{font-family:'Courier New',Courier,monospace;font-size:12px;background:#1e1e2e;color:#cdd6f4;border:none;border-radius:var(--radius);padding:16px;height:400px;resize:vertical;tab-size:2;width:100%}
+.json-subnav{display:flex;gap:3px;margin-bottom:12px;border-bottom:2px solid var(--border)}
+.json-subbtn{padding:8px 16px;border:none;background:none;font-size:13px;font-weight:500;cursor:pointer;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit;border-radius:var(--radius) var(--radius) 0 0;transition:color .15s,background .15s}
+.json-subbtn.active{color:var(--primary);border-bottom-color:var(--primary);background:#eef3fb}
+.json-subbtn:hover:not(.active){background:var(--bg);color:var(--text)}
+.json-panel{display:none}
+.json-panel.active{display:block}
 
 /* ── Notices ─────────────────────────────── */
 .notice{padding:9px 13px;border-radius:var(--radius);font-size:12.5px;margin-bottom:10px}
@@ -376,20 +382,44 @@ WD1 900×2000=4 スリガラス3ミリ"></textarea>
 <!-- ═══ Tab 4: JSON 出力 ════════════════════════════════════ -->
 <div id="tab-json" class="tab-content">
 
-  <div class="btn-group">
-    <button class="btn btn-primary" onclick="generateJSON()">🔄 JSON生成</button>
-    <button class="btn btn-outline" onclick="copyJSON()">📋 コピー</button>
-    <button class="btn btn-success" onclick="downloadJSON()">💾 JSON保存</button>
-    <button class="btn btn-secondary" onclick="downloadCSV()">📊 CSV保存</button>
-    <button class="btn btn-outline" onclick="document.getElementById('jsonImportInput').click()">📂 JSONから復元</button>
-    <input type="file" id="jsonImportInput" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+  <!-- Sub-tabs -->
+  <div class="json-subnav">
+    <button class="json-subbtn active" onclick="switchJsonMode(this,'takeoff')">📋 図面拾い出し用JSON</button>
+    <button class="json-subbtn" onclick="switchJsonMode(this,'estimate')">🔧 積算ツール取込用JSON</button>
   </div>
 
-  <div class="notice notice-info" style="font-size:12px">
-    「JSON生成」を押すと現在の明細が JSON 形式で表示されます。「JSONから復元」では別のセッションで保存した JSON を読み込んで明細を復元できます。
+  <!-- Panel A: 図面拾い出し用 -->
+  <div id="jsonPanel-takeoff" class="json-panel active">
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="generateJSON('takeoff')">🔄 生成</button>
+      <button class="btn btn-outline" onclick="copyJSON('takeoff')">📋 コピー</button>
+      <button class="btn btn-success" onclick="downloadJSON('takeoff')">💾 保存</button>
+      <button class="btn btn-secondary" onclick="downloadCSV()">📊 CSV</button>
+      <button class="btn btn-outline" onclick="document.getElementById('jsonImportInput').click()">📂 復元</button>
+      <input type="file" id="jsonImportInput" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+    </div>
+    <div class="notice notice-info" style="font-size:12px">
+      このツール独自の保存形式です。「復元」ボタンで再読み込みできます。積算ツール形式の JSON も復元可能です。
+    </div>
+    <textarea id="jsonOutput" readonly placeholder="「生成」ボタンを押してください…"></textarea>
   </div>
 
-  <textarea id="jsonOutput" readonly placeholder="「JSON生成」ボタンを押してください…"></textarea>
+  <!-- Panel B: 積算ツール取込用 -->
+  <div id="jsonPanel-estimate" class="json-panel">
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="generateJSON('estimate')">🔄 生成</button>
+      <button class="btn btn-outline" onclick="copyJSON('estimate')">📋 コピー</button>
+      <button class="btn btn-success" onclick="downloadJSON('estimate')">💾 保存</button>
+      <button class="btn btn-accent" onclick="sendToEstimateTool()">🚀 積算ツールへ直接送る</button>
+    </div>
+    <div class="notice notice-info" style="font-size:12px">
+      <b>USG 積算ツール（us-glass-estimate-tool）</b> に直接読み込める形式です。<br>
+      「積算ツールへ直接送る」は同じブラウザ・同じ端末で積算ツールを使う場合に有効です（localStorage 経由）。<br>
+      別端末や別ブラウザの場合は「保存」でダウンロードし、積算ツールの「案件を読み込む」で開いてください。
+    </div>
+    <textarea id="jsonEstimateOutput" readonly placeholder="「生成」ボタンを押してください…"></textarea>
+  </div>
+
 </div>
 
 <!-- ═══ Toast ══════════════════════════════════════════════ -->
@@ -422,6 +452,7 @@ let currentFileURL = null;
    State
    ================================================================ */
 let items = [];   // [{id,symbol,width,height,qty,glassType,fixing,work,remove,note,areaEach,areaTotal,caulkM}]
+let currentJsonMode = 'takeoff';
 
 /* ================================================================
    Utilities
@@ -524,7 +555,18 @@ function switchTab(btn, name) {
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'table') renderTable();
-  if (name === 'json')  generateJSON();
+  if (name === 'json')  generateJSON(currentJsonMode);
+}
+
+function switchJsonMode(btn, mode) {
+  currentJsonMode = mode;
+  document.querySelectorAll('.json-subbtn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.json-panel').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+  btn.classList.add('active');
+  const panel = document.getElementById('jsonPanel-' + mode);
+  panel.classList.add('active');
+  panel.style.display = 'block';
+  generateJSON(mode);
 }
 
 /* ================================================================
@@ -861,6 +903,8 @@ function clearSavedData() {
 /* ================================================================
    JSON build / output
    ================================================================ */
+
+/* ---- 図面拾い出し用 ---- */
 function buildJSON() {
   return {
     app:         'US_GLASS_DRAWING_TAKEOFF',
@@ -884,29 +928,129 @@ function buildJSON() {
   };
 }
 
-function generateJSON() {
-  document.getElementById('jsonOutput').value = JSON.stringify(buildJSON(), null, 2);
+/* ---- 積算ツール取込用（us-glass-estimate-tool のrow形式に完全準拠） ---- */
+function buildEstimateJSON() {
+  const pname = document.getElementById('projectName').value || '';
+
+  const rows = items.map(it => {
+    // 留め方マッピング: ビード→"none"、それ以外→"caulking"
+    const fix = (it.fixing === 'ビード') ? 'none' : 'caulking';
+    // 取り外しマッピング: あり/取り外し込み→"1"、なし→"0"
+    const rem = (it.remove === 'あり' || it.remove === '取り外し込み') ? '1' : '0';
+    // 施工マッピング: 施工なし→constRate="0"、施工あり→""（デフォルト使用）
+    const constRate = (it.work === '施工なし') ? '0' : '';
+
+    return {
+      fixtureNo:   it.symbol    || '',
+      w:           String(parseInt(it.width)  || 0),
+      h:           String(parseInt(it.height) || 0),
+      q:           String(parseInt(it.qty)    || 1),
+      g:           it.glassType || '',
+      priceMode:   'sqm',
+      customName:  '',
+      customSqm:   '',
+      customMat:   '',
+      customSell:  '',
+      customMatC:  '',
+      sellMult:    '',
+      constRate:   constRate,
+      fix:         fix,
+      rem:         rem,
+      fire:        '0',
+      ckRemoval:   '0',
+      caulkSide:   'double',
+      matScope:    'per_unit',
+      disposal:    '0',
+      caulkRate:   '',
+      removalRate: '',
+      ckUnitPrice: '',
+      ckCoverage:  '',
+      addName:     it.note || '',
+      addAmt:      '',
+      addInCost:   false,
+      addInSales:  false,
+      addInCust:   false
+    };
+  });
+
+  return {
+    pname:    pname,
+    settings: {},
+    quote: {
+      qTitle:    'お見積書',
+      qAddr:     '',
+      qCase:     pname,
+      qDate:     '',
+      qNum:      '',
+      qNotes:    ''
+    },
+    rows: rows
+  };
 }
 
-function copyJSON() {
-  generateJSON();
-  const ta = document.getElementById('jsonOutput');
+/* ---- 積算ツールへ直接送る（同一ブラウザ・同一オリジン） ---- */
+function sendToEstimateTool() {
+  if (items.length === 0) { showToast('明細が空です', 'error'); return; }
+  const data      = buildEstimateJSON();
+  const pname     = document.getElementById('projectName').value || '図面拾い出し';
+  const now       = new Date();
+  const pad       = n => String(n).padStart(2, '0');
+  const savedAt   = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const newProj   = { id: 'case_' + now.getTime(), name: pname, savedAt, data };
+
+  try {
+    let projects = [];
+    const raw = localStorage.getItem('usglass_projects');
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) projects = p; }
+
+    const idx = projects.findIndex(p => p.name === pname);
+    if (idx >= 0) {
+      if (!confirm(`「${pname}」という案件が既に存在します。上書きしますか？`)) return;
+      projects[idx] = newProj;
+    } else {
+      projects.push(newProj);
+    }
+
+    localStorage.setItem('usglass_projects', JSON.stringify(projects));
+    showToast(`✅ 積算ツールに送りました（${data.rows.length}件）`, 'success', 3000);
+    setTimeout(() => window.open('https://usglassworks.github.io/us-glass-estimate-tool/', '_blank'), 700);
+  } catch (err) {
+    showToast('送信エラー: ' + err.message, 'error', 4000);
+  }
+}
+
+/* ---- 共通操作 ---- */
+function generateJSON(mode) {
+  mode = mode || currentJsonMode || 'takeoff';
+  if (mode === 'estimate') {
+    document.getElementById('jsonEstimateOutput').value = JSON.stringify(buildEstimateJSON(), null, 2);
+  } else {
+    document.getElementById('jsonOutput').value = JSON.stringify(buildJSON(), null, 2);
+  }
+}
+
+function copyJSON(mode) {
+  mode = mode || currentJsonMode || 'takeoff';
+  generateJSON(mode);
+  const id = (mode === 'estimate') ? 'jsonEstimateOutput' : 'jsonOutput';
+  const ta = document.getElementById(id);
   ta.select();
   try {
-    const ok = document.execCommand('copy');
-    if (ok) { showToast('JSON をコピーしました', 'success'); return; }
+    if (document.execCommand('copy')) { showToast('コピーしました', 'success'); return; }
   } catch (_) {}
   navigator.clipboard.writeText(ta.value)
-    .then(() => showToast('JSON をコピーしました', 'success'))
+    .then(() => showToast('コピーしました', 'success'))
     .catch(() => showToast('コピーに失敗しました。テキストを手動でコピーしてください。', 'error', 3500));
 }
 
-function downloadJSON() {
-  generateJSON();
-  const json = document.getElementById('jsonOutput').value;
-  const pn   = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
-  const fname = `${pn}_takeoff_${isoDate()}.json`;
-  blobDownload(new Blob([json], { type: 'application/json' }), fname);
+function downloadJSON(mode) {
+  mode = mode || currentJsonMode || 'takeoff';
+  generateJSON(mode);
+  const id     = (mode === 'estimate') ? 'jsonEstimateOutput' : 'jsonOutput';
+  const json   = document.getElementById(id).value;
+  const pn     = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
+  const suffix = (mode === 'estimate') ? '_estimate_import' : '_takeoff';
+  blobDownload(new Blob([json], { type: 'application/json' }), `${pn}${suffix}_${isoDate()}.json`);
   showToast('JSON を保存しました');
 }
 
@@ -920,12 +1064,10 @@ function downloadCSV() {
     (it.caulkM    || 0).toFixed(2),
     it.note || ''
   ]);
-
   const csv = [headers, ...rows]
     .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
     .join('\r\n');
-
-  const pn  = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
+  const pn = (document.getElementById('projectName').value || 'usglass').replace(/[\\/:*?"<>|]/g, '_');
   blobDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `${pn}_takeoff_${isoDate()}.csv`);
   showToast('CSV を保存しました');
 }
@@ -937,40 +1079,55 @@ function importJSON(input) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (data.app && data.app !== 'US_GLASS_DRAWING_TAKEOFF') {
-        if (!confirm('このファイルはこのツール用ではない可能性があります。続けますか？')) return;
-      }
-      if (data.projectName) document.getElementById('projectName').value = data.projectName;
-      if (Array.isArray(data.items)) {
+
+      /* --- 図面拾い出し形式 --- */
+      if (data.app === 'US_GLASS_DRAWING_TAKEOFF' && Array.isArray(data.items)) {
+        if (data.projectName) document.getElementById('projectName').value = data.projectName;
         items = data.items.map(it => calcItem({
-          id:        genId(),
-          symbol:    it.symbol       || '',
-          width:     it.width_mm     || 0,
-          height:    it.height_mm    || 0,
-          qty:       it.qty          || 0,
-          glassType: it.glass_type   || '',
-          fixing:    it.fixing       || '不明',
-          work:      it.work         || '施工あり',
-          remove:    it.remove       || 'なし',
-          note:      it.note         || ''
+          id: genId(), symbol: it.symbol || '',
+          width: it.width_mm || 0, height: it.height_mm || 0, qty: it.qty || 0,
+          glassType: it.glass_type || '', fixing: it.fixing || '不明',
+          work: it.work || '施工あり', remove: it.remove || 'なし', note: it.note || ''
         }));
-        saveData();
-        // Go to table
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn')[2].classList.add('active');
-        document.getElementById('tab-table').classList.add('active');
-        renderTable();
-        showToast(`✅ ${items.length} 件を読み込みました`);
-      } else {
-        showToast('items が見つかりません', 'error');
+        saveData(); goToTable();
+        showToast(`✅ ${items.length} 件を読み込みました（拾い出し形式）`);
+        return;
       }
+
+      /* --- 積算ツール形式 (pname + rows) --- */
+      if (data.pname !== undefined && Array.isArray(data.rows)) {
+        if (data.pname) document.getElementById('projectName').value = data.pname;
+        items = data.rows.map(row => calcItem({
+          id: genId(), symbol: row.fixtureNo || '',
+          width:  parseInt(row.w) || 0,
+          height: parseInt(row.h) || 0,
+          qty:    parseInt(row.q) || 1,
+          glassType: row.g || '',
+          fixing: (row.fix === 'none') ? 'ビード' : 'コーキング',
+          work:   (row.constRate === '0') ? '施工なし' : '施工あり',
+          remove: (row.rem === '1') ? 'あり' : 'なし',
+          note:   row.addName || ''
+        }));
+        saveData(); goToTable();
+        showToast(`✅ ${items.length} 件を読み込みました（積算ツール形式）`);
+        return;
+      }
+
+      showToast('対応していない JSON フォーマットです', 'error', 4000);
     } catch (ex) {
-      showToast('JSON の読み込みに失敗しました: ' + ex.message, 'error', 4000);
+      showToast('JSON 読み込みエラー: ' + ex.message, 'error', 4000);
     }
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+function goToTable() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+  document.getElementById('tab-table').classList.add('active');
+  renderTable();
 }
 
 /* ================================================================
