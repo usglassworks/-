@@ -69,8 +69,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku
 .btn-group{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
 
 /* ── Forms ───────────────────────────────── */
-input[type=text],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .15s,box-shadow .15s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,79,139,.1)}
+input[type=text],input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;color:var(--text);background:#fff;transition:border-color .15s,box-shadow .15s}
+/* textarea は個別ルール (#ocrInput / #jsonOutput 等) で制御するためここには含めない */
+input[type=text]:focus,input[type=number]:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,79,139,.1)}
+#ocrInput:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,79,139,.1)}
 .form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .form-row label{font-size:13px;color:var(--text-light);white-space:nowrap;min-width:72px}
 
@@ -113,24 +115,38 @@ tfoot td.num{color:var(--primary-dark)}
 
 /* ── OCR ─────────────────────────────────── */
 #ocrInput{
+  /* レイアウト */
+  display:block;
   width:100%;
   min-height:220px;
+  box-sizing:border-box;
+  /* タイポグラフィ */
   font-family:'Courier New',Courier,monospace;
-  font-size:16px;          /* 16px未満だとiOS Safariが自動ズームして入力を妨げる */
+  font-size:16px;       /* iOS Safari: 16px未満で自動ズーム→入力不可になる */
   line-height:1.6;
+  color:#111;
+  /* スペーシング */
   padding:12px;
-  border:1px solid #ccc;
+  /* ボーダー */
+  border:2px solid #aab8c8;
   border-radius:8px;
   background:#fff;
-  color:#111;
+  /* リサイズ */
   resize:vertical;
+  /* iOS Safari タッチ入力を確実に有効化 */
   pointer-events:auto;
+  touch-action:auto;       /* タッチイベントをブラウザ既定で処理させる */
+  cursor:text;
   -webkit-user-select:text;
   user-select:text;
+  -webkit-tap-highlight-color:rgba(26,79,139,0.15);
+  /* 重なり防止 */
   position:relative;
   z-index:10;
+  /* Safari 独自スタイルを除去してタップを妨げる要素を排除 */
   -webkit-appearance:none;
   appearance:none;
+  outline:none;
 }
 .example-box{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-light);line-height:1.7;white-space:pre}
 
@@ -265,10 +281,16 @@ aw5 420×410=2 f6</div>
 
   <div class="card">
     <div class="card-title">✏️ OCR 貼り付け / 手入力</div>
-    <textarea id="ocrInput" placeholder="ここに図面のOCR結果または手入力テキストを貼り付けてください…
-
-AW1 770×1032=4 FL6
-WD1 900×2000=4 スリガラス3ミリ"></textarea>
+    <textarea
+      id="ocrInput"
+      tabindex="0"
+      inputmode="text"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="none"
+      spellcheck="false"
+      placeholder="ここにOCR結果または手入力テキストを貼り付けてください&#10;例）AW1 770×1032=4 FL6&#10;　　WD1 900×2000=4 スリガラス3ミリ"
+    ></textarea>
 
     <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
       <div class="radio-group">
