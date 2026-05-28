@@ -281,15 +281,40 @@ aw5 420×410=2 f6</div>
 
   <div class="card">
     <div class="card-title">✏️ OCR 貼り付け / 手入力</div>
+    <!--
+      iOS Safari 対応: CSS cascade を迂回するため inline style を使用。
+      readonly / disabled は一切付けない。
+      tabindex="0" でフォーカス順に確実に含める。
+    -->
     <textarea
       id="ocrInput"
       tabindex="0"
       inputmode="text"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="none"
-      spellcheck="false"
-      placeholder="ここにOCR結果または手入力テキストを貼り付けてください&#10;例）AW1 770×1032=4 FL6&#10;　　WD1 900×2000=4 スリガラス3ミリ"
+      placeholder="AW1 770×1032=4 FL6&#10;AW2 585×1032=1 FL6&#10;WD1 900×2000=4 スリガラス3ミリ"
+      style="
+        display:block;
+        width:100%;
+        min-height:220px;
+        padding:12px;
+        font-size:16px;
+        font-family:'Courier New',Courier,monospace;
+        line-height:1.6;
+        color:#111;
+        background:#fff;
+        border:2px solid #aab8c8;
+        border-radius:8px;
+        resize:vertical;
+        box-sizing:border-box;
+        -webkit-user-select:text;
+        user-select:text;
+        pointer-events:auto;
+        touch-action:auto;
+        -webkit-appearance:none;
+        appearance:none;
+        cursor:text;
+        position:relative;
+        z-index:10;
+      "
     ></textarea>
 
     <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
@@ -1174,6 +1199,28 @@ function blobDownload(blob, filename) {
    ================================================================ */
 loadData();
 renderTable();
+
+/* ----------------------------------------------------------------
+   iOS Safari: textarea は touchend 後に明示的 focus() が必要な場合がある。
+   passive:true で登録し、requestAnimationFrame でブラウザの描画後に実行。
+   ---------------------------------------------------------------- */
+(function () {
+  var ta = document.getElementById('ocrInput');
+  if (!ta) return;
+
+  ta.addEventListener('touchend', function () {
+    var el = this;
+    requestAnimationFrame(function () { el.focus(); });
+  }, { passive: true });
+
+  /* iOS でタブ切り替え後にキーボードが出ない場合の補助 */
+  ta.addEventListener('touchstart', function () {
+    if (document.activeElement !== this) {
+      var el = this;
+      requestAnimationFrame(function () { el.focus(); });
+    }
+  }, { passive: true });
+})();
 </script>
 
 </body>
