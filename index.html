@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>USG 図面拾い出しツール</title>
 <style>
-/* ── Variables ───────────────────────── */
 :root{
-  --primary:#1a4f8b; --primary-d:#13396b; --primary-l:#2563a8;
-  --secondary:#3a7ca5; --accent:#0ea5c8;
-  --bg:#f0f2f5; --card:#fff; --border:#d1d9e0;
-  --text:#1a1f2e; --text-s:#64748b; --text-m:#94a3b8;
-  --danger:#dc2626; --success:#16a34a; --warning:#d97706;
-  --r:8px; --sh:0 1px 4px rgba(0,0,0,.10); --shm:0 2px 8px rgba(0,0,0,.14);
-  --hdr:52px; --mnav:54px;
+  --primary:#1a4f8b;--primary-d:#13396b;--primary-l:#2563a8;
+  --secondary:#3a7ca5;--accent:#0ea5c8;
+  --bg:#f0f2f5;--card:#fff;--border:#d1d9e0;
+  --text:#1a1f2e;--text-s:#64748b;--text-m:#94a3b8;
+  --danger:#dc2626;--success:#16a34a;--warning:#d97706;
+  --r:8px;--sh:0 1px 4px rgba(0,0,0,.10);--shm:0 2px 8px rgba(0,0,0,.14);
+  --hdr:52px;--mnav:54px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -21,26 +20,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
      background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;
      display:flex;flex-direction:column}
 
-/* ── Header ──────────────────────────── */
+/* Header */
 .app-hdr{background:linear-gradient(135deg,var(--primary-d),var(--primary) 60%,var(--primary-l));
-         color:#fff;height:var(--hdr);display:flex;align-items:center;gap:10px;
-         padding:0 14px;box-shadow:0 2px 6px rgba(0,0,0,.25);flex-shrink:0;z-index:20}
-.app-hdr h1{font-size:15px;font-weight:700;letter-spacing:.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hdr-pname{font-size:12px;color:rgba(255,255,255,.7);white-space:nowrap}
+         color:#fff;height:var(--hdr);display:flex;align-items:center;gap:8px;
+         padding:0 12px;box-shadow:0 2px 6px rgba(0,0,0,.25);flex-shrink:0;z-index:20}
+.app-hdr h1{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 #hdrProjectName{padding:4px 8px;font-size:13px;border:1px solid rgba(255,255,255,.4);
                 border-radius:6px;background:rgba(255,255,255,.15);color:#fff;
-                width:180px;max-width:35vw}
+                width:160px;max-width:28vw;flex-shrink:1}
 #hdrProjectName::placeholder{color:rgba(255,255,255,.5)}
 #hdrProjectName:focus{outline:none;background:rgba(255,255,255,.25)}
+.hdr-pname{font-size:11px;color:rgba(255,255,255,.65);white-space:nowrap;flex-shrink:0}
 
-/* ── App body ────────────────────────── */
+/* App body */
 .app-body{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
 
-/* ── Panel base ──────────────────────── */
+/* Panel base */
 .panel{display:flex;flex-direction:column;overflow:hidden}
 .viewer-panel{border-right:2px solid var(--border)}
 
-/* ── Viewer toolbar ──────────────────── */
+/* Viewer toolbar */
 .vp-toolbar{flex-shrink:0;padding:6px 8px;background:var(--primary-d);
             display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .vp-toolbar .tbtn{padding:5px 10px;font-size:12px;font-weight:500;border:none;
@@ -48,16 +47,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
                   color:#fff;white-space:nowrap;font-family:inherit;min-height:32px;
                   display:inline-flex;align-items:center;gap:4px;transition:background .15s}
 .vp-toolbar .tbtn:hover{background:rgba(255,255,255,.32)}
-.vp-toolbar .tbtn:active{opacity:.75}
 .vp-toolbar .tbtn.file-btn{background:rgba(255,255,255,.85);color:var(--primary-d);font-weight:600}
 .vp-toolbar .sep{width:1px;height:22px;background:rgba(255,255,255,.25);margin:0 2px}
-#fileNameBadge{font-size:11px;color:rgba(255,255,255,.8);max-width:140px;
+#fileNameBadge{font-size:11px;color:rgba(255,255,255,.8);max-width:130px;
                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #zoomLabel{font-size:11px;color:rgba(255,255,255,.8);min-width:42px;text-align:center}
 #pageInfo{font-size:11px;color:rgba(255,255,255,.8);min-width:48px;text-align:center;
           background:rgba(0,0,0,.2);padding:3px 6px;border-radius:4px}
 
-/* ── Viewer content ──────────────────── */
+/* Viewer content */
 .vp-content{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;
             background:#e8e8e8;display:flex;flex-direction:column;align-items:flex-start;
             padding:8px;gap:0}
@@ -74,13 +72,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 #pdfFallback{padding:14px;background:#fff3cd;border-radius:var(--r);
              font-size:13px;color:#856404;border:1px solid #ffc107;width:100%}
 
-/* ── Work panel ──────────────────────── */
+/* Work panel */
 .work-panel{background:var(--bg)}
 .wp-nav{flex-shrink:0;display:flex;background:var(--primary);overflow-x:auto;
         -webkit-overflow-scrolling:touch;scrollbar-width:none}
 .wp-nav::-webkit-scrollbar{display:none}
-.wbtn{padding:9px 14px;color:rgba(255,255,255,.6);border:none;background:none;
-      font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+.wbtn{padding:9px 12px;color:rgba(255,255,255,.6);border:none;background:none;
+      font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;
       border-bottom:3px solid transparent;font-family:inherit;transition:all .15s}
 .wbtn.active{color:#fff;border-bottom-color:#7dd3fc;background:rgba(255,255,255,.08)}
 .wbtn:hover:not(.active){color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
@@ -88,11 +86,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .sec{display:none}
 .sec.active{display:block}
 
-/* ── Buttons ─────────────────────────── */
+/* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;
      padding:9px 15px;border-radius:var(--r);border:none;font-size:13px;font-weight:500;
-     cursor:pointer;transition:all .15s;white-space:nowrap;min-height:40px;
-     font-family:inherit}
+     cursor:pointer;transition:all .15s;white-space:nowrap;min-height:40px;font-family:inherit}
 .btn:active{opacity:.8}
 .btn-p{background:var(--primary);color:#fff}.btn-p:hover{background:var(--primary-l)}
 .btn-s{background:var(--secondary);color:#fff}.btn-s:hover{opacity:.88}
@@ -105,27 +102,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .btn-sm{padding:6px 11px;font-size:12px;min-height:32px}
 .bgrp{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
 
-/* ── Card ────────────────────────────── */
+/* Card */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
       padding:12px 14px;margin-bottom:10px;box-shadow:var(--sh)}
 .card-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;
             padding-bottom:7px;border-bottom:1px solid var(--border);
-            display:flex;align-items:center;gap:5px}
+            display:flex;align-items:center;justify-content:space-between;gap:5px}
 
-/* ── Quick-add form ──────────────────── */
-.qform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-            gap:8px;margin-bottom:8px}
-.qform-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+/* Quick-add form */
+.qform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px;margin-bottom:8px}
 .qfield label{display:block;font-size:11px;color:var(--text-s);margin-bottom:3px;font-weight:600}
 .qfield input,.qfield select{width:100%;padding:7px 9px;border:1px solid var(--border);
                               border-radius:6px;font-size:14px;color:var(--text);
                               background:#fff;font-family:inherit}
 .qfield input:focus,.qfield select:focus{outline:none;border-color:var(--primary);
                                           box-shadow:0 0 0 3px rgba(26,79,139,.1)}
-.qfield-wide{grid-column:1/-1}
-.add-btn-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 
-/* ── Form summary (mini) ─────────────── */
+/* Mini summary */
 .mini-sum{display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;
           background:#eef3fb;border-radius:var(--r);font-size:12px;margin-top:8px;
           border:1px solid #c9d9f0}
@@ -134,18 +127,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .ms-val{font-weight:700;color:var(--primary-d);font-size:14px}
 .ms-unit{font-size:10px;color:var(--text-m)}
 
-/* ── OCR textarea ────────────────────── */
-/* All critical properties as inline style on the element */
+/* OCR */
 .ocr-hint{font-size:11.5px;color:var(--text-s);margin:6px 0 10px;line-height:1.8}
-.ocr-hint b{color:var(--text);font-family:'Courier New',monospace}
 .example-box{background:#f8f9fb;border:1px solid var(--border);border-radius:var(--r);
              padding:8px 12px;font-family:'Courier New',Courier,monospace;
-             font-size:12px;color:var(--text-s);line-height:1.7;white-space:pre;
-             margin-bottom:10px}
+             font-size:12px;color:var(--text-s);line-height:1.7;white-space:pre;margin-bottom:10px}
 .radio-row{display:flex;gap:14px;align-items:center;font-size:13px}
 .radio-row label{display:flex;align-items:center;gap:5px;cursor:pointer}
 
-/* ── Table ───────────────────────────── */
+/* Table */
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
           border:1px solid var(--border);border-radius:var(--r);margin-top:8px}
 table{width:100%;min-width:860px;border-collapse:collapse;font-size:11.5px}
@@ -167,10 +157,11 @@ tfoot td{background:#eef3fb;font-weight:700;padding:7px 4px;
 .sum-bar{display:flex;flex-wrap:wrap;gap:14px;padding:8px 12px;background:#eef3fb;
          border-radius:var(--r);margin-bottom:8px;border:1px solid #c9d9f0}
 .sum-item{display:flex;align-items:baseline;gap:4px}
-.sum-lbl{font-size:11px;color:var(--text-s)}.sum-val{font-size:14px;font-weight:700;color:var(--primary-d)}
+.sum-lbl{font-size:11px;color:var(--text-s)}
+.sum-val{font-size:14px;font-weight:700;color:var(--primary-d)}
 .sum-unit{font-size:10px;color:var(--text-m)}
 
-/* ── JSON ────────────────────────────── */
+/* JSON */
 .json-subnav{display:flex;gap:3px;margin-bottom:10px;border-bottom:2px solid var(--border)}
 .json-subbtn{padding:7px 14px;border:none;background:none;font-size:12.5px;font-weight:500;
              cursor:pointer;color:var(--text-s);border-bottom:3px solid transparent;
@@ -179,16 +170,31 @@ tfoot td{background:#eef3fb;font-weight:700;padding:7px 4px;
 .json-panel{display:none}.json-panel.active{display:block}
 #jsonOutput,#jsonEstimateOutput{font-family:'Courier New',monospace;font-size:11px;
                                  background:#1e1e2e;color:#cdd6f4;border:none;
-                                 border-radius:var(--r);padding:14px;height:340px;
+                                 border-radius:var(--r);padding:14px;height:300px;
                                  resize:vertical;width:100%;display:block}
 
-/* ── Notices ─────────────────────────── */
+/* Project list */
+.proj-item{display:flex;align-items:center;gap:10px;padding:10px 0;
+           border-bottom:1px solid var(--border)}
+.proj-item:last-child{border-bottom:none}
+.proj-info{flex:1;min-width:0}
+.proj-name{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-meta{font-size:11px;color:var(--text-s);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-actions{display:flex;gap:5px;flex-shrink:0}
+.proj-empty{color:var(--text-m);font-size:13px;text-align:center;padding:24px 0}
+.save-row{display:flex;gap:8px;margin-bottom:10px}
+.save-row input{flex:1;padding:8px 10px;border:1px solid var(--border);
+                border-radius:6px;font-size:14px;font-family:inherit}
+.save-row input:focus{outline:none;border-color:var(--primary)}
+
+/* Notices */
 .notice{padding:8px 12px;border-radius:var(--r);font-size:12px;margin-bottom:8px}
 .n-info{background:#e0f2fe;border-left:3px solid var(--accent);color:#0369a1}
 .n-warn{background:#fef3c7;border-left:3px solid var(--warning);color:#92400e}
 .n-ok{background:#dcfce7;border-left:3px solid var(--success);color:#15803d}
+.n-err{background:#fee2e2;border-left:3px solid var(--danger);color:#991b1b}
 
-/* ── Toast ───────────────────────────── */
+/* Toast */
 .toast{position:fixed;bottom:70px;right:16px;padding:9px 16px;border-radius:var(--r);
        font-size:13px;font-weight:500;z-index:9999;box-shadow:var(--shm);
        pointer-events:none;transition:opacity .3s;display:none}
@@ -196,92 +202,93 @@ tfoot td{background:#eef3fb;font-weight:700;padding:7px 4px;
 .t-info{background:var(--primary);color:#fff}
 .t-err{background:var(--danger);color:#fff}
 
-/* ── Mobile nav ──────────────────────── */
+/* Mobile nav */
 .mobile-nav{display:none}
 
-/* ── Responsive ──────────────────────── */
-@media (max-width:899px){
-  html,body{overflow:auto}
-  body{overflow:hidden}
+/* ── Responsive ── */
+
+/* ≥900px: left/right split */
+@media (min-width:900px){
+  .app-body{grid-template-columns:1fr 1fr}
+  .mobile-nav{display:none !important}
+  .panel{display:flex !important}
+  .wp-nav{display:flex}
+}
+
+/* 600px–899px: top/bottom split, both panels visible */
+@media (min-width:600px) and (max-width:899px){
+  .app-body{grid-template-columns:1fr;grid-template-rows:44% 56%;overflow:hidden}
+  .panel{display:flex !important;position:relative;height:100%}
+  .viewer-panel{border-right:none;border-bottom:2px solid var(--border)}
+  .mobile-nav{display:none !important}
+  .wp-nav{display:flex}
+}
+
+/* <600px: single panel + bottom nav */
+@media (max-width:599px){
   .app-body{grid-template-columns:1fr;flex:1;overflow:hidden;position:relative}
   .panel{position:absolute;top:0;left:0;right:0;bottom:0;display:none}
   .panel.m-active{display:flex}
-  /* mobile: no desktop work sub-tabs */
   .wp-nav{display:none}
   .wp-body{padding:10px}
-  /* all sections visible on mobile within work panel */
   .sec{display:block !important}
   .mobile-nav{display:flex;flex-shrink:0;background:var(--primary-d);
               height:var(--mnav);z-index:30;border-top:1px solid rgba(255,255,255,.2)}
   .mbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
         gap:1px;border:none;background:none;color:rgba(255,255,255,.6);
-        font-size:10px;cursor:pointer;padding:4px 2px;font-family:inherit;transition:all .15s}
-  .mbtn .mico{font-size:18px;line-height:1}
+        font-size:9px;cursor:pointer;padding:4px 1px;font-family:inherit;transition:all .15s}
+  .mbtn .mico{font-size:16px;line-height:1}
   .mbtn.active{color:#fff;background:rgba(255,255,255,.1)}
   .toast{bottom:calc(var(--mnav) + 8px)}
-  #hdrProjectName{width:120px;max-width:28vw}
-}
-@media (min-width:900px){
-  .mobile-nav{display:none !important}
-  .panel{display:flex !important}
+  #hdrProjectName{width:110px;max-width:26vw}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══ Header ════════════════════════════════════════════ -->
+<!-- Header -->
 <header class="app-hdr">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
     <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
   </svg>
-  <h1>USG 図面拾い出しツール</h1>
+  <h1>USG 図面拾い出し</h1>
   <span class="hdr-pname">現場名</span>
   <input type="text" id="hdrProjectName" placeholder="現場名を入力" oninput="saveData()">
 </header>
 
-<!-- ═══ App body (split layout) ══════════════════════════ -->
+<!-- App body -->
 <div class="app-body" id="appBody">
 
-  <!-- ─── Left / Top: Viewer Panel ──────────────────────── -->
+  <!-- Viewer Panel -->
   <div class="panel viewer-panel m-active" id="panelViewer">
-
-    <!-- Viewer toolbar -->
     <div class="vp-toolbar">
-      <button class="tbtn file-btn" onclick="document.getElementById('fileInput').click()">
-        📂 ファイルを開く
-      </button>
+      <button class="tbtn file-btn" onclick="document.getElementById('fileInput').click()">📂 開く</button>
       <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf" style="display:none">
       <span id="fileNameBadge"></span>
-      <span class="sep" id="ctrlSep" style="display:none"></span>
-
-      <!-- PDF controls -->
       <div id="pdfCtrl" style="display:none;display:contents">
+        <span class="sep"></span>
         <button class="tbtn" onclick="pdfPrev()" id="pdfPrevBtn">◀</button>
         <span id="pageInfo">1/1</span>
         <button class="tbtn" onclick="pdfNext()" id="pdfNextBtn">▶</button>
         <span class="sep"></span>
-        <button class="tbtn" onclick="zoomOut()" title="縮小">－</button>
+        <button class="tbtn" onclick="zoomOut()">－</button>
         <span id="zoomLabel">幅合わせ</span>
-        <button class="tbtn" onclick="zoomIn()" title="拡大">＋</button>
+        <button class="tbtn" onclick="zoomIn()">＋</button>
         <button class="tbtn" onclick="resetZoom()" title="幅に合わせる">↺</button>
         <span class="sep"></span>
-        <button class="tbtn" onclick="openExternal()">🔗 別タブ</button>
+        <button class="tbtn" onclick="openExternal()">🔗</button>
       </div>
-
-      <!-- Image controls -->
       <div id="imgCtrl" style="display:none;display:contents">
+        <span class="sep"></span>
         <button class="tbtn" onclick="imgZoomOut()">－</button>
         <span id="imgZoomLabel">100%</span>
         <button class="tbtn" onclick="imgZoomIn()">＋</button>
         <button class="tbtn" onclick="imgZoomReset()">↺</button>
         <span class="sep"></span>
-        <button class="tbtn" onclick="openExternal()">🔗 別タブ</button>
+        <button class="tbtn" onclick="openExternal()">🔗</button>
       </div>
     </div>
-
-    <!-- Viewer content -->
     <div class="vp-content" id="vpContent">
-      <!-- Drop zone -->
       <div class="file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -292,45 +299,35 @@ tfoot td{background:#eef3fb;font-weight:700;padding:7px 4px;
         <div class="dl">タップ / クリックまたはドラッグ&ドロップ</div>
         <div class="ds">PDF・JPEG・PNG に対応</div>
       </div>
-      <!-- PDF canvas -->
       <canvas id="pdfCanvas" style="display:none"></canvas>
-      <!-- PDF fallback -->
       <div id="pdfFallback" style="display:none">
         ⚠️ PDFのプレビューを表示できませんでした。
-        <button class="btn btn-o btn-sm" style="margin-top:8px" onclick="openExternal()">🔗 PDFを別タブで開く</button>
+        <button class="btn btn-o btn-sm" style="margin-top:8px" onclick="openExternal()">🔗 別タブで開く</button>
       </div>
-      <!-- Image -->
       <img id="imagePreview" alt="図面プレビュー" style="display:none">
     </div>
   </div>
 
-  <!-- ─── Right / Bottom: Work Panel ────────────────────── -->
+  <!-- Work Panel -->
   <div class="panel work-panel" id="panelWork">
-
-    <!-- Desktop sub-tabs -->
     <nav class="wp-nav">
-      <button class="wbtn active" onclick="switchWork(this,'form')">✏️ 入力フォーム</button>
-      <button class="wbtn" onclick="switchWork(this,'ocr')">📝 テキスト入力</button>
+      <button class="wbtn active" onclick="switchWork(this,'form')">✏️ 入力</button>
+      <button class="wbtn" onclick="switchWork(this,'ocr')">📝 テキスト</button>
       <button class="wbtn" onclick="switchWork(this,'table')">📋 明細</button>
-      <button class="wbtn" onclick="switchWork(this,'json')">📤 JSON出力</button>
+      <button class="wbtn" onclick="switchWork(this,'json')">📤 JSON</button>
+      <button class="wbtn" onclick="switchWork(this,'project')">📁 案件</button>
     </nav>
 
     <div class="wp-body" id="wpBody">
 
-      <!-- ── Section: 入力フォーム ──────────────── -->
+      <!-- Section: 入力フォーム -->
       <div class="sec active" id="secForm">
-
-        <!-- Quick-add form -->
         <div class="card">
-          <div class="card-title">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            寸法入力（1件ずつ追加）
-          </div>
-
+          <div class="card-title">寸法入力（1件ずつ追加）</div>
           <div class="qform-grid">
             <div class="qfield">
               <label>建具記号</label>
-              <input type="text" id="f_symbol" placeholder="AW1" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+              <input type="text" id="f_symbol" placeholder="AW1" style="text-transform:uppercase">
             </div>
             <div class="qfield">
               <label>幅 W (mm)</label>
@@ -376,31 +373,26 @@ tfoot td{background:#eef3fb;font-weight:700;padding:7px 4px;
             <label>備考</label>
             <input type="text" id="f_note" placeholder="メモ">
           </div>
-
-          <div class="add-btn-row">
-            <button class="btn btn-p" onclick="addFromForm()" style="flex:1;font-size:15px;min-height:44px">
-              ＋ 明細へ追加
-            </button>
-            <button class="btn btn-o btn-sm" onclick="clearForm()" title="入力欄をクリア">✕ クリア</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-p" id="addBtn" style="flex:1;font-size:15px;min-height:44px">＋ 明細へ追加</button>
+            <button class="btn btn-o btn-sm" onclick="clearForm()">✕ クリア</button>
           </div>
         </div>
 
-        <!-- Mini summary -->
-        <div class="mini-sum" id="miniSum">
-          <div class="ms-item"><span class="ms-lbl">件数</span><span class="ms-val" id="ms_cnt">0</span><span class="ms-unit">種</span></div>
-          <div class="ms-item"><span class="ms-lbl">合計枚数</span><span class="ms-val" id="ms_qty">0</span><span class="ms-unit">枚</span></div>
-          <div class="ms-item"><span class="ms-lbl">合計面積</span><span class="ms-val" id="ms_area">0.000</span><span class="ms-unit">㎡</span></div>
-          <div class="ms-item"><span class="ms-lbl">コーキング計</span><span class="ms-val" id="ms_caulk">0.00</span><span class="ms-unit">M</span></div>
+        <div class="mini-sum">
+          <div class="ms-item"><span class="ms-label">件数</span><span class="ms-val" id="ms_cnt">0</span><span class="ms-unit">種</span></div>
+          <div class="ms-item"><span class="ms-label">合計枚数</span><span class="ms-val" id="ms_qty">0</span><span class="ms-unit">枚</span></div>
+          <div class="ms-item"><span class="ms-label">合計面積</span><span class="ms-val" id="ms_area">0.000</span><span class="ms-unit">㎡</span></div>
+          <div class="ms-item"><span class="ms-label">コーキング計</span><span class="ms-val" id="ms_caulk">0.00</span><span class="ms-unit">M</span></div>
         </div>
 
-        <!-- Recent items (compact list) -->
-        <div class="card" id="recentCard" style="display:none">
+        <div class="card" id="recentCard" style="display:none;margin-top:10px">
           <div class="card-title">直近追加</div>
           <div id="recentList" style="font-size:12px"></div>
         </div>
       </div>
 
-      <!-- ── Section: OCR テキスト入力 ─────────── -->
+      <!-- Section: OCR テキスト入力 -->
       <div class="sec" id="secOcr">
         <div class="card">
           <div class="card-title">📝 テキスト一括入力</div>
@@ -411,49 +403,36 @@ WD1 900×2000=4 スリガラス3ミリ</div>
             形式：<b>記号 幅×高さ=枚数 ガラス種別</b>（×とxどちらも可）<br>
             記号は自動で大文字化・ガラス種別は自動正規化
           </div>
-
-          <!--
-            iOS Safari 対応 textarea:
-            inline style で font-size:16px 等を保証。
-            readonly / disabled なし。
-            touchend で focus() を呼ぶ JS も別途設定。
-          -->
           <textarea
             id="ocrInput"
             tabindex="0"
             inputmode="text"
             placeholder="AW1 770×1032=4 FL6&#10;AW2 585×1032=1 FL6&#10;WD1 900×2000=4 スリガラス3ミリ"
-            style="
-              display:block;width:100%;min-height:200px;
-              padding:12px;font-size:16px;font-family:'Courier New',Courier,monospace;
-              line-height:1.6;color:#111;background:#fff;
-              border:2px solid #aab8c8;border-radius:8px;resize:vertical;
-              box-sizing:border-box;-webkit-user-select:text;user-select:text;
-              pointer-events:auto;touch-action:auto;-webkit-appearance:none;
-              appearance:none;cursor:text;position:relative;z-index:1;
-            "
+            style="display:block;width:100%;min-height:180px;padding:12px;font-size:16px;
+                   font-family:'Courier New',Courier,monospace;line-height:1.6;color:#111;
+                   background:#fff;border:2px solid #aab8c8;border-radius:8px;resize:vertical;
+                   box-sizing:border-box;-webkit-user-select:text;user-select:text;
+                   pointer-events:auto;touch-action:auto;-webkit-appearance:none;
+                   appearance:none;cursor:text;position:relative;z-index:1;"
           ></textarea>
-
           <div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:10px">
             <div class="radio-row">
               <label><input type="radio" name="appendMode" value="append" checked> 追加</label>
               <label><input type="radio" name="appendMode" value="replace"> 置き換え</label>
             </div>
-            <button class="btn btn-p" onclick="convertOCR()" style="margin-left:auto;min-height:44px">
-              ✅ 明細へ変換
-            </button>
+            <button class="btn btn-p" onclick="convertOCR()" style="margin-left:auto;min-height:44px">✅ 明細へ変換</button>
           </div>
           <div id="ocrMsg" style="display:none;margin-top:8px"></div>
         </div>
       </div>
 
-      <!-- ── Section: 明細テーブル ──────────────── -->
+      <!-- Section: 明細テーブル -->
       <div class="sec" id="secTable">
         <div class="bgrp">
           <button class="btn btn-p" onclick="addRow()">＋ 行追加</button>
           <button class="btn btn-o" onclick="sortBySymbol()">🔤 記号順</button>
           <button class="btn btn-d" onclick="resetAll()">🗑 全リセット</button>
-          <button class="btn btn-ghost btn-sm" onclick="clearSavedData()" style="margin-left:auto">保存データ削除</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearSavedData()" style="margin-left:auto">保存削除</button>
         </div>
         <div class="sum-bar">
           <div class="sum-item"><span class="sum-lbl">件数</span><span class="sum-val" id="sumCount">0</span></div>
@@ -497,14 +476,13 @@ WD1 900×2000=4 スリガラス3ミリ</div>
         <div style="font-size:11px;color:var(--text-m);margin-top:5px">※ 入力内容はブラウザに自動保存されます</div>
       </div>
 
-      <!-- ── Section: JSON 出力 ─────────────────── -->
+      <!-- Section: JSON出力 -->
       <div class="sec" id="secJson">
         <div class="json-subnav">
           <button class="json-subbtn active" onclick="switchJsonMode(this,'takeoff')">📋 図面拾い出し用</button>
           <button class="json-subbtn" onclick="switchJsonMode(this,'estimate')">🔧 積算ツール取込用</button>
         </div>
 
-        <!-- Takeoff JSON -->
         <div class="json-panel active" id="jsonPanel-takeoff">
           <div class="bgrp">
             <button class="btn btn-p btn-sm" onclick="generateJSON('takeoff')">🔄 生成</button>
@@ -514,21 +492,45 @@ WD1 900×2000=4 スリガラス3ミリ</div>
             <button class="btn btn-o btn-sm" onclick="document.getElementById('jsonImportInput').click()">📂 復元</button>
             <input type="file" id="jsonImportInput" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
           </div>
+          <div id="jsonEmptyWarn" class="notice n-warn" style="display:none">⚠️ 明細がありません。データを入力してから生成してください。</div>
           <textarea id="jsonOutput" readonly placeholder="「生成」ボタンを押してください…"></textarea>
         </div>
 
-        <!-- Estimate JSON -->
         <div class="json-panel" id="jsonPanel-estimate">
           <div class="bgrp">
             <button class="btn btn-p btn-sm" onclick="generateJSON('estimate')">🔄 生成</button>
             <button class="btn btn-o btn-sm" onclick="copyJSON('estimate')">📋 コピー</button>
             <button class="btn btn-g btn-sm" onclick="downloadJSON('estimate')">💾 保存</button>
-            <button class="btn btn-a btn-sm" onclick="sendToEstimateTool()">🚀 積算ツールへ直接送る</button>
+            <button class="btn btn-a btn-sm" onclick="sendToEstimateTool()">🚀 積算ツールへ送る</button>
           </div>
           <div class="notice n-info" style="font-size:11.5px">
-            積算ツールと同じブラウザ・端末の場合は「直接送る」が使えます。別端末は「保存」してください。
+            積算ツールと同じブラウザ・端末の場合は「送る」が使えます。別端末は「保存」してください。
           </div>
+          <div id="jsonEstimateEmptyWarn" class="notice n-warn" style="display:none">⚠️ 明細がありません。データを入力してから生成してください。</div>
           <textarea id="jsonEstimateOutput" readonly placeholder="「生成」ボタンを押してください…"></textarea>
+        </div>
+      </div>
+
+      <!-- Section: 案件管理 -->
+      <div class="sec" id="secProject">
+        <div class="card">
+          <div class="card-title">💾 現在の案件を保存</div>
+          <div class="save-row">
+            <input type="text" id="saveProjectNameInput" placeholder="案件名（現場名フィールドから引用）">
+            <button class="btn btn-p" onclick="saveCurrentProject()">💾 保存</button>
+          </div>
+          <div class="notice n-info" style="font-size:11.5px">
+            PDF/画像ファイルと明細データをまとめて保存します（IndexedDB）。<br>
+            ファイルが大きい場合は保存に少し時間がかかります。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📁 保存済み案件</span>
+            <button class="btn btn-o btn-sm" onclick="loadProjectList()" style="font-size:11px">🔄 更新</button>
+          </div>
+          <div id="projectList"><div class="proj-empty">読み込み中…</div></div>
         </div>
       </div>
 
@@ -537,7 +539,7 @@ WD1 900×2000=4 スリガラス3ミリ</div>
 
 </div><!-- /app-body -->
 
-<!-- ═══ Mobile bottom nav ══════════════════════════════════ -->
+<!-- Mobile bottom nav (only <600px) -->
 <nav class="mobile-nav" id="mobileNav">
   <button class="mbtn active" onclick="switchMobile(this,'viewer')">
     <span class="mico">📐</span>図面
@@ -551,24 +553,20 @@ WD1 900×2000=4 スリガラス3ミリ</div>
   <button class="mbtn" onclick="switchMobile(this,'json')">
     <span class="mico">📤</span>JSON
   </button>
+  <button class="mbtn" onclick="switchMobile(this,'project')">
+    <span class="mico">📁</span>案件
+  </button>
 </nav>
 
-<!-- ═══ Toast ══════════════════════════════════════════════ -->
 <div id="toast" class="toast"></div>
 
 <script>
-/* ================================================================
-   PDF.js — CDN ロード（失敗してもアプリは動く）
-   ================================================================ */
-let pdfJsReady = false;
-let pdfDocObj  = null;
-let pdfCurrentPage = 1;
-let pdfScale   = null;   // null = 幅自動フィット
-let imgScaleV  = 1.0;
-let currentFileURL = null;
-let currentFileType = ''; // 'pdf' | 'image'
+/* ── PDF.js ── */
+let pdfJsReady = false, pdfDocObj = null, pdfCurrentPage = 1;
+let pdfScale = null, imgScaleV = 1.0;
+let currentFileURL = null, currentFileType = '', currentFile = null;
 
-(function () {
+(function(){
   const s = document.createElement('script');
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
   s.onload = () => {
@@ -581,15 +579,67 @@ let currentFileType = ''; // 'pdf' | 'image'
   document.head.appendChild(s);
 })();
 
-/* ================================================================
-   State
-   ================================================================ */
+/* ── State ── */
 let items = [];
 let currentJsonMode = 'takeoff';
 
-/* ================================================================
-   Utilities
-   ================================================================ */
+/* ── IndexedDB ── */
+const DB_NAME = 'usg_takeoff_db', DB_VER = 1, DB_STORE = 'projects';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE))
+        db.createObjectStore(DB_STORE, { keyPath: 'id' });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbPut(project) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(project);
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = e => resolve(e.target.result || []);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbGet(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).get(id);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+/* ── Utilities ── */
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 function toHalfWidth(s) {
@@ -602,22 +652,21 @@ function esc(v) {
   return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function showToast(msg, type = 'ok', ms = 2400) {
+function showToast(msg, type='ok', ms=2400) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast t-' + type;
+  t.textContent = msg; t.className = 'toast t-' + type;
   t.style.display = 'block'; t.style.opacity = '1';
   clearTimeout(t._tid);
-  t._tid = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { t.style.display = 'none'; }, 350); }, ms);
+  t._tid = setTimeout(() => { t.style.opacity='0'; setTimeout(()=>{t.style.display='none';},350); }, ms);
 }
 
 function calcItem(item) {
   const w = parseFloat(item.width) || 0;
   const h = parseFloat(item.height) || 0;
   const q = parseInt(item.qty) || 0;
-  item.areaEach  = (w / 1000) * (h / 1000);
+  item.areaEach  = (w/1000) * (h/1000);
   item.areaTotal = item.areaEach * q;
-  item.caulkM    = (item.fixing === 'ビード') ? 0 : ((w + h) / 1000) * 4 * q;
+  item.caulkM    = item.fixing === 'ビード' ? 0 : ((w+h)/1000)*4*q;
   return item;
 }
 
@@ -637,24 +686,21 @@ function normalizeGlass(raw) {
 function parseOCRLine(rawLine) {
   const line = toHalfWidth(rawLine.trim());
   if (!line) return null;
-  const re = /^([A-Za-z]+\d+[\w\-]*)\s+(\d+)\s*[xX]\s*(\d+)\s*=\s*(\d+)\s*(.*)?$/;
-  const m = line.match(re);
+  const m = line.match(/^([A-Za-z]+\d+[\w\-]*)\s+(\d+)\s*[xX]\s*(\d+)\s*=\s*(\d+)\s*(.*)?$/);
   if (!m) return null;
   return calcItem({
     id: genId(), symbol: m[1].toUpperCase(),
     width: parseInt(m[2]), height: parseInt(m[3]), qty: parseInt(m[4]),
-    glassType: normalizeGlass((m[5] || '').trim()),
+    glassType: normalizeGlass((m[5]||'').trim()),
     fixing: '不明', work: '施工あり', remove: 'なし', note: ''
   });
 }
 
-/* ================================================================
-   File handling
-   ================================================================ */
-const fileInput = document.getElementById('fileInput');
-const dropZone  = document.getElementById('dropZone');
-
-fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+/* ── File handling ── */
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+const dropZone = document.getElementById('dropZone');
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
@@ -663,13 +709,12 @@ dropZone.addEventListener('drop', e => {
 });
 
 function handleFile(file) {
+  currentFile = file;
   const name = file.name;
   const ext  = (name.split('.').pop() || '').toLowerCase();
   document.getElementById('fileNameBadge').textContent = '📄 ' + name;
-
   if (currentFileURL) URL.revokeObjectURL(currentFileURL);
   currentFileURL = URL.createObjectURL(file);
-
   dropZone.style.display = 'none';
 
   if (ext === 'pdf' || file.type === 'application/pdf') {
@@ -686,39 +731,29 @@ function handleFile(file) {
     document.getElementById('pdfCtrl').style.display = 'none';
     document.getElementById('imgCtrl').style.display = 'contents';
     const img = document.getElementById('imagePreview');
-    img.src = currentFileURL;
-    img.style.display = 'block';
-    imgScaleV = 1.0;
-    img.style.transform = '';
+    img.src = currentFileURL; img.style.display = 'block';
+    imgScaleV = 1.0; img.style.transform = '';
     document.getElementById('imgZoomLabel').textContent = '100%';
   }
-  // On mobile: switch to viewer after loading
-  if (window.innerWidth < 900) switchMobile(document.querySelector('.mbtn'), 'viewer');
+  if (window.innerWidth < 600) switchMobile(document.querySelector('.mbtn'), 'viewer');
 }
 
-function openExternal() {
-  if (currentFileURL) window.open(currentFileURL, '_blank');
-}
+function openExternal() { if (currentFileURL) window.open(currentFileURL, '_blank'); }
 
-/* ================================================================
-   PDF.js rendering
-   ================================================================ */
+/* ── PDF.js rendering ── */
 async function loadPDF(url) {
-  const canvas   = document.getElementById('pdfCanvas');
+  const canvas = document.getElementById('pdfCanvas');
   const fallback = document.getElementById('pdfFallback');
-  canvas.style.display = 'none';
-  fallback.style.display = 'none';
-
+  canvas.style.display = 'none'; fallback.style.display = 'none';
   if (!pdfJsReady) { await new Promise(r => setTimeout(r, 1500)); }
   if (!pdfJsReady) { fallback.style.display = 'block'; return; }
-
   try {
-    pdfDocObj      = await pdfjsLib.getDocument(url).promise;
+    pdfDocObj = await pdfjsLib.getDocument(url).promise;
     pdfCurrentPage = 1;
     canvas.style.display = 'block';
     await renderPDFPage(1);
   } catch (err) {
-    console.warn('PDF load error:', err);
+    console.warn('PDF load:', err);
     fallback.style.display = 'block';
   }
 }
@@ -726,17 +761,15 @@ async function loadPDF(url) {
 async function renderPDFPage(num) {
   if (!pdfDocObj) return;
   try {
-    const page      = await pdfDocObj.getPage(num);
-    const canvas    = document.getElementById('pdfCanvas');
-    const ctx       = canvas.getContext('2d');
+    const page = await pdfDocObj.getPage(num);
+    const canvas = document.getElementById('pdfCanvas');
     const container = canvas.parentElement;
-    const maxW      = (container.clientWidth || 800) - 16;
-    const vp0       = page.getViewport({ scale: 1 });
-    const scale     = (pdfScale === null) ? maxW / vp0.width : pdfScale;
-    const vp        = page.getViewport({ scale });
-    canvas.width    = vp.width;
-    canvas.height   = vp.height;
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const maxW = (container.clientWidth || 800) - 16;
+    const vp0 = page.getViewport({ scale: 1 });
+    const scale = pdfScale === null ? maxW / vp0.width : pdfScale;
+    const vp = page.getViewport({ scale });
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
     document.getElementById('pageInfo').textContent = `${num} / ${pdfDocObj.numPages}`;
     document.getElementById('zoomLabel').textContent =
       pdfScale === null ? '幅合わせ' : Math.round(pdfScale * 100) + '%';
@@ -745,40 +778,32 @@ async function renderPDFPage(num) {
   } catch (err) { console.warn('page render:', err); }
 }
 
-async function pdfPrev() {
-  if (!pdfDocObj || pdfCurrentPage <= 1) return;
-  pdfCurrentPage--; await renderPDFPage(pdfCurrentPage);
-}
-async function pdfNext() {
-  if (!pdfDocObj || pdfCurrentPage >= pdfDocObj.numPages) return;
-  pdfCurrentPage++; await renderPDFPage(pdfCurrentPage);
-}
+async function pdfPrev() { if (pdfDocObj && pdfCurrentPage > 1) { pdfCurrentPage--; await renderPDFPage(pdfCurrentPage); } }
+async function pdfNext() { if (pdfDocObj && pdfCurrentPage < pdfDocObj.numPages) { pdfCurrentPage++; await renderPDFPage(pdfCurrentPage); } }
 
 const Z_STEP = 1.25, Z_MIN = 0.25, Z_MAX = 5.0;
 function zoomIn()    { pdfScale = pdfScale === null ? 1.0 : Math.min(pdfScale * Z_STEP, Z_MAX); renderPDFPage(pdfCurrentPage); }
 function zoomOut()   { pdfScale = pdfScale === null ? 0.8 : Math.max(pdfScale / Z_STEP, Z_MIN); renderPDFPage(pdfCurrentPage); }
 function resetZoom() { pdfScale = null; renderPDFPage(pdfCurrentPage); }
 
-/* Image zoom */
-function imgZoomIn()    { imgScaleV = Math.min(imgScaleV * 1.25, 5); applyImgZoom(); }
-function imgZoomOut()   { imgScaleV = Math.max(imgScaleV / 1.25, 0.25); applyImgZoom(); }
+function imgZoomIn()    { imgScaleV = Math.min(imgScaleV*1.25,5); applyImgZoom(); }
+function imgZoomOut()   { imgScaleV = Math.max(imgScaleV/1.25,0.25); applyImgZoom(); }
 function imgZoomReset() { imgScaleV = 1.0; applyImgZoom(); }
 function applyImgZoom() {
   const img = document.getElementById('imagePreview');
   img.style.transform = imgScaleV === 1 ? '' : `scale(${imgScaleV})`;
-  document.getElementById('imgZoomLabel').textContent = Math.round(imgScaleV * 100) + '%';
+  document.getElementById('imgZoomLabel').textContent = Math.round(imgScaleV*100) + '%';
 }
 
-/* ================================================================
-   Tab switching
-   ================================================================ */
+/* ── Tab switching ── */
 function switchWork(btn, sec) {
   document.querySelectorAll('.wbtn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('sec' + capitalize(sec)).classList.add('active');
-  if (sec === 'table') renderTable();
-  if (sec === 'json')  generateJSON(currentJsonMode);
+  document.getElementById('sec' + sec.charAt(0).toUpperCase() + sec.slice(1)).classList.add('active');
+  if (sec === 'table')   renderTable();
+  if (sec === 'json')    generateJSON(currentJsonMode);
+  if (sec === 'project') { syncSaveNameFromHeader(); loadProjectList(); }
 }
 
 function switchMobile(btn, tab) {
@@ -790,31 +815,42 @@ function switchMobile(btn, tab) {
     viewer.classList.add('m-active'); work.classList.remove('m-active');
   } else {
     viewer.classList.remove('m-active'); work.classList.add('m-active');
-    if (tab === 'table') renderTable();
-    if (tab === 'json')  generateJSON(currentJsonMode);
+    if (tab === 'table')   renderTable();
+    if (tab === 'json')    generateJSON(currentJsonMode);
+    if (tab === 'project') { syncSaveNameFromHeader(); loadProjectList(); }
   }
 }
 
 function switchJsonMode(btn, mode) {
   currentJsonMode = mode;
   document.querySelectorAll('.json-subbtn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.json-panel').forEach(p => { p.classList.remove('active'); });
+  document.querySelectorAll('.json-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('jsonPanel-' + mode).classList.add('active');
   generateJSON(mode);
 }
 
-function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+/* ── Quick-add form ── */
+// Note: no oninput handlers on text inputs – value is read on submit only.
+// CSS text-transform:uppercase handles visual display for symbol field.
 
-/* ================================================================
-   Quick-add form
-   ================================================================ */
+document.getElementById('addBtn').addEventListener('click', addFromForm);
+
+// Allow Enter key in symbol/width/height/qty/glass to trigger add
+['f_symbol','f_width','f_height','f_qty','f_glass','f_note'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.isComposing) addFromForm();
+  });
+});
+
 function addFromForm() {
   const symbol    = (document.getElementById('f_symbol').value || '').trim().toUpperCase();
   const width     = parseInt(document.getElementById('f_width').value)  || 0;
   const height    = parseInt(document.getElementById('f_height').value) || 0;
   const qty       = parseInt(document.getElementById('f_qty').value)    || 1;
-  const glassType = (document.getElementById('f_glass').value || '').trim();
+  const glassType = normalizeGlass((document.getElementById('f_glass').value || '').trim());
   const fixing    = document.getElementById('f_fixing').value;
   const work      = document.getElementById('f_work').value;
   const remove    = document.getElementById('f_remove').value;
@@ -824,13 +860,11 @@ function addFromForm() {
     showToast('建具記号か寸法を入力してください', 'err'); return;
   }
 
-  const item = calcItem({ id: genId(), symbol, width, height, qty, glassType, fixing, work, remove, note });
-  items.push(item);
+  items.push(calcItem({ id:genId(), symbol, width, height, qty, glassType, fixing, work, remove, note }));
   saveData();
   updateAllSummaries();
   updateRecentList();
 
-  // Clear transient fields; keep persistent settings
   document.getElementById('f_symbol').value = '';
   document.getElementById('f_width').value  = '';
   document.getElementById('f_height').value = '';
@@ -850,24 +884,21 @@ function updateRecentList() {
   const el = document.getElementById('recentList');
   const card = document.getElementById('recentCard');
   const recent = items.slice(-5).reverse();
-  if (recent.length === 0) { card.style.display = 'none'; return; }
+  if (!recent.length) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  el.innerHTML = recent.map((it, i) =>
+  el.innerHTML = recent.map(it =>
     `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee">
       <span style="font-weight:600;min-width:50px">${esc(it.symbol)}</span>
       <span style="color:#64748b">${it.width}×${it.height} ${it.qty}枚 ${esc(it.glassType)}</span>
-      <span style="color:#16a34a">${it.areaTotal.toFixed(3)}㎡</span>
+      <span style="color:#16a34a">${(it.areaTotal||0).toFixed(3)}㎡</span>
     </div>`
   ).join('');
 }
 
-/* ================================================================
-   OCR Convert
-   ================================================================ */
+/* ── OCR Convert ── */
 function convertOCR() {
-  const text   = document.getElementById('ocrInput').value;
-  const ok     = [];
-  const failed = [];
+  const text = document.getElementById('ocrInput').value;
+  const ok = [], failed = [];
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
     const item = parseOCRLine(line);
@@ -887,17 +918,10 @@ function convertOCR() {
     msgEl.innerHTML = '⚠️ 変換できる行がありませんでした。';
   }
   msgEl.style.display = 'block';
-
-  if (ok.length > 0) {
-    updateAllSummaries();
-    updateRecentList();
-    showToast(`✅ ${ok.length} 件を追加しました`, 'ok', 2200);
-  }
+  if (ok.length > 0) { updateAllSummaries(); updateRecentList(); showToast(`✅ ${ok.length} 件を追加しました`,'ok',2200); }
 }
 
-/* ================================================================
-   Table rendering
-   ================================================================ */
+/* ── Table ── */
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
@@ -935,13 +959,11 @@ function renderTable() {
 }
 
 function updateField(idx, field, value) {
-  const item = items[idx];
-  if (!item) return;
+  const item = items[idx]; if (!item) return;
   if (['width','height','qty'].includes(field)) item[field] = parseInt(value) || 0;
   else if (field === 'symbol') item[field] = value.toUpperCase();
   else item[field] = value;
-  calcItem(item);
-  saveData();
+  calcItem(item); saveData();
   const ae = document.getElementById(`ae_${idx}`);
   const at = document.getElementById(`at_${idx}`);
   const cm = document.getElementById(`cm_${idx}`);
@@ -952,52 +974,33 @@ function updateField(idx, field, value) {
 }
 
 function updateAllSummaries() {
-  let totalQty = 0, totalArea = 0, totalCaulk = 0;
-  items.forEach(it => { totalQty += (parseInt(it.qty)||0); totalArea += (it.areaTotal||0); totalCaulk += (it.caulkM||0); });
-  const cnt   = items.length;
-  const qty   = totalQty;
-  const area  = totalArea.toFixed(3);
-  const caulk = totalCaulk.toFixed(2);
-
-  // Form section summary
+  let totalQty=0, totalArea=0, totalCaulk=0;
+  items.forEach(it => { totalQty+=(parseInt(it.qty)||0); totalArea+=(it.areaTotal||0); totalCaulk+=(it.caulkM||0); });
+  const cnt=items.length, qty=totalQty, area=totalArea.toFixed(3), caulk=totalCaulk.toFixed(2);
   document.getElementById('ms_cnt').textContent   = cnt;
   document.getElementById('ms_qty').textContent   = qty;
   document.getElementById('ms_area').textContent  = area;
   document.getElementById('ms_caulk').textContent = caulk;
-  // Table section summary
-  ['sumCount','sumQty','sumArea','sumCaulk'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = [cnt, qty, area, caulk][i];
+  ['sumCount','sumQty','sumArea','sumCaulk'].forEach((id,i) => {
+    const el=document.getElementById(id); if(el) el.textContent=[cnt,qty,area,caulk][i];
   });
-  // Table footer
-  ['footQty','footArea','footCaulk'].forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = [qty, area, caulk][i];
+  ['footQty','footArea','footCaulk'].forEach((id,i) => {
+    const el=document.getElementById(id); if(el) el.textContent=[qty,area,caulk][i];
   });
 }
 
 function addRow() {
-  items.push(calcItem({ id:genId(), symbol:'', width:0, height:0, qty:1,
-                        glassType:'', fixing:'不明', work:'施工あり', remove:'なし', note:'' }));
+  items.push(calcItem({id:genId(),symbol:'',width:0,height:0,qty:1,glassType:'',fixing:'不明',work:'施工あり',remove:'なし',note:''}));
   saveData(); renderTable();
 }
-
-function deleteRow(idx) { items.splice(idx, 1); saveData(); renderTable(); }
-
-function sortBySymbol() {
-  items.sort((a,b) => (a.symbol||'').localeCompare(b.symbol||'','ja'));
-  saveData(); renderTable(); showToast('記号順に並び替えました','info');
-}
-
+function deleteRow(idx) { items.splice(idx,1); saveData(); renderTable(); }
+function sortBySymbol() { items.sort((a,b)=>(a.symbol||'').localeCompare(b.symbol||'','ja')); saveData(); renderTable(); showToast('記号順に並び替えました','info'); }
 function resetAll() {
   if (!confirm('全明細を削除しますか？\nこの操作は元に戻せません。')) return;
-  items = []; saveData(); renderTable(); updateRecentList();
-  showToast('リセットしました','info');
+  items=[]; saveData(); renderTable(); updateRecentList(); showToast('リセットしました','info');
 }
 
-/* ================================================================
-   LocalStorage
-   ================================================================ */
+/* ── LocalStorage ── */
 const LS_KEY = 'usg_takeoff_v1';
 
 function saveData() {
@@ -1006,35 +1009,32 @@ function saveData() {
       projectName: document.getElementById('hdrProjectName').value || '',
       items, savedAt: new Date().toISOString()
     }));
-  } catch (e) {}
+  } catch(e) {}
 }
 
 function loadData() {
   try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
+    const raw = localStorage.getItem(LS_KEY); if (!raw) return;
     const data = JSON.parse(raw);
     if (data.projectName) document.getElementById('hdrProjectName').value = data.projectName;
     if (Array.isArray(data.items)) {
       items = data.items.map(it => calcItem({
-        id: it.id || genId(), symbol: it.symbol||'', width: it.width||0,
-        height: it.height||0, qty: it.qty||0, glassType: it.glassType||'',
-        fixing: it.fixing||'不明', work: it.work||'施工あり', remove: it.remove||'なし', note: it.note||''
+        id:it.id||genId(), symbol:it.symbol||'', width:it.width||0,
+        height:it.height||0, qty:it.qty||0, glassType:it.glassType||'',
+        fixing:it.fixing||'不明', work:it.work||'施工あり', remove:it.remove||'なし', note:it.note||''
       }));
     }
-  } catch (e) {}
+  } catch(e) {}
 }
 
 function clearSavedData() {
   if (!confirm('ブラウザに保存されているデータを削除しますか？')) return;
-  localStorage.removeItem(LS_KEY); items = [];
-  document.getElementById('hdrProjectName').value = '';
+  localStorage.removeItem(LS_KEY); items=[];
+  document.getElementById('hdrProjectName').value='';
   renderTable(); updateRecentList(); showToast('保存データを削除しました','info');
 }
 
-/* ================================================================
-   JSON build / output
-   ================================================================ */
+/* ── JSON build ── */
 function buildJSON() {
   return {
     app: 'US_GLASS_DRAWING_TAKEOFF', version: '1.0',
@@ -1053,39 +1053,59 @@ function buildJSON() {
 }
 
 function buildEstimateJSON() {
-  const pname = document.getElementById('hdrProjectName').value || '';
   return {
-    pname, settings: {},
-    quote: { qTitle:'お見積書', qAddr:'', qCase:pname, qDate:'', qNum:'', qNotes:'' },
-    rows: items.map(it => ({
-      fixtureNo: it.symbol||'', w: String(parseInt(it.width)||0), h: String(parseInt(it.height)||0),
-      q: String(parseInt(it.qty)||1), g: it.glassType||'', priceMode:'sqm',
-      customName:'', customSqm:'', customMat:'', customSell:'', customMatC:'',
-      sellMult:'', constRate: it.work==='施工なし' ? '0' : '',
-      fix: it.fixing==='ビード' ? 'none' : 'caulking',
-      rem: (it.remove==='あり'||it.remove==='取り外し込み') ? '1' : '0',
-      fire:'0', ckRemoval:'0', caulkSide:'double', matScope:'per_unit', disposal:'0',
-      caulkRate:'', removalRate:'', ckUnitPrice:'', ckCoverage:'',
-      addName: it.note||'', addAmt:'', addInCost:false, addInSales:false, addInCust:false
+    app: 'US_GLASS_DRAWING_TAKEOFF', version: '1.0',
+    projectName: document.getElementById('hdrProjectName').value || '',
+    createdAt: new Date().toISOString(),
+    items: items.map(it => ({
+      symbol:    it.symbol||'',
+      width_mm:  parseInt(it.width)||0,
+      height_mm: parseInt(it.height)||0,
+      qty:       parseInt(it.qty)||0,
+      glass_type: it.glassType||'',
+      fixing:    it.fixing||'',
+      work:      it.work||'',
+      remove:    it.remove||'',
+      note:      it.note||''
     }))
   };
 }
 
 function generateJSON(mode) {
   mode = mode || currentJsonMode || 'takeoff';
-  if (mode === 'estimate')
-    document.getElementById('jsonEstimateOutput').value = JSON.stringify(buildEstimateJSON(), null, 2);
-  else
-    document.getElementById('jsonOutput').value = JSON.stringify(buildJSON(), null, 2);
+  const isEmpty = items.length === 0;
+
+  if (mode === 'estimate') {
+    const warnEl = document.getElementById('jsonEstimateEmptyWarn');
+    const outEl  = document.getElementById('jsonEstimateOutput');
+    if (isEmpty) {
+      warnEl.style.display = 'block';
+      outEl.value = '';
+    } else {
+      warnEl.style.display = 'none';
+      outEl.value = JSON.stringify(buildEstimateJSON(), null, 2);
+    }
+  } else {
+    const warnEl = document.getElementById('jsonEmptyWarn');
+    const outEl  = document.getElementById('jsonOutput');
+    if (isEmpty) {
+      warnEl.style.display = 'block';
+      outEl.value = '';
+    } else {
+      warnEl.style.display = 'none';
+      outEl.value = JSON.stringify(buildJSON(), null, 2);
+    }
+  }
 }
 
 function copyJSON(mode) {
   mode = mode || currentJsonMode || 'takeoff';
+  if (items.length === 0) { showToast('明細がありません','err'); return; }
   generateJSON(mode);
   const id = mode === 'estimate' ? 'jsonEstimateOutput' : 'jsonOutput';
   const ta = document.getElementById(id);
   ta.select();
-  try { if (document.execCommand('copy')) { showToast('コピーしました'); return; } } catch (_) {}
+  try { if (document.execCommand('copy')) { showToast('コピーしました'); return; } } catch(_) {}
   navigator.clipboard.writeText(ta.value)
     .then(() => showToast('コピーしました'))
     .catch(() => showToast('コピーに失敗しました','err',3000));
@@ -1093,20 +1113,23 @@ function copyJSON(mode) {
 
 function downloadJSON(mode) {
   mode = mode || currentJsonMode || 'takeoff';
+  if (items.length === 0) { showToast('明細がありません','err'); return; }
   generateJSON(mode);
-  const id     = mode === 'estimate' ? 'jsonEstimateOutput' : 'jsonOutput';
-  const json   = document.getElementById(id).value;
-  const pn     = (document.getElementById('hdrProjectName').value||'usglass').replace(/[\\/:*?"<>|]/g,'_');
-  const suffix = mode === 'estimate' ? '_estimate_import' : '_takeoff';
+  const id = mode === 'estimate' ? 'jsonEstimateOutput' : 'jsonOutput';
+  const json = document.getElementById(id).value;
+  const pn = (document.getElementById('hdrProjectName').value||'usglass').replace(/[\\/:*?"<>|]/g,'_');
+  const suffix = mode === 'estimate' ? '_estimate' : '_takeoff';
   blobDL(new Blob([json],{type:'application/json'}), `${pn}${suffix}_${isoDate()}.json`);
   showToast('JSON を保存しました');
 }
 
 function downloadCSV() {
+  if (items.length === 0) { showToast('明細がありません','err'); return; }
   const headers = ['建具記号','幅W(mm)','高さH(mm)','枚数','ガラス種別','留め方','施工','取り外し','面積/枚㎡','合計面積㎡','コーキングM','備考'];
-  const rows = items.map(it => [it.symbol,it.width,it.height,it.qty,it.glassType,it.fixing,it.work,it.remove,(it.areaEach||0).toFixed(3),(it.areaTotal||0).toFixed(3),(it.caulkM||0).toFixed(2),it.note||'']);
-  const csv  = [headers,...rows].map(r => r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const pn   = (document.getElementById('hdrProjectName').value||'usglass').replace(/[\\/:*?"<>|]/g,'_');
+  const rows = items.map(it => [it.symbol,it.width,it.height,it.qty,it.glassType,it.fixing,it.work,it.remove,
+    (it.areaEach||0).toFixed(3),(it.areaTotal||0).toFixed(3),(it.caulkM||0).toFixed(2),it.note||'']);
+  const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const pn = (document.getElementById('hdrProjectName').value||'usglass').replace(/[\\/:*?"<>|]/g,'_');
   blobDL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}), `${pn}_takeoff_${isoDate()}.csv`);
   showToast('CSV を保存しました');
 }
@@ -1119,26 +1142,26 @@ function importJSON(input) {
       const data = JSON.parse(e.target.result);
       if (data.app === 'US_GLASS_DRAWING_TAKEOFF' && Array.isArray(data.items)) {
         if (data.projectName) document.getElementById('hdrProjectName').value = data.projectName;
-        items = data.items.map(it => calcItem({id:genId(),symbol:it.symbol||'',width:it.width_mm||0,height:it.height_mm||0,qty:it.qty||0,glassType:it.glass_type||'',fixing:it.fixing||'不明',work:it.work||'施工あり',remove:it.remove||'なし',note:it.note||''}));
+        items = data.items.map(it => calcItem({
+          id:genId(), symbol:it.symbol||'', width:it.width_mm||0, height:it.height_mm||0,
+          qty:it.qty||0, glassType:it.glass_type||'', fixing:it.fixing||'不明',
+          work:it.work||'施工あり', remove:it.remove||'なし', note:it.note||''
+        }));
         saveData(); renderTable(); updateRecentList(); showToast(`✅ ${items.length} 件を読み込みました`);
-      } else if (data.pname !== undefined && Array.isArray(data.rows)) {
-        if (data.pname) document.getElementById('hdrProjectName').value = data.pname;
-        items = data.rows.map(row => calcItem({id:genId(),symbol:row.fixtureNo||'',width:parseInt(row.w)||0,height:parseInt(row.h)||0,qty:parseInt(row.q)||1,glassType:row.g||'',fixing:row.fix==='none'?'ビード':'コーキング',work:row.constRate==='0'?'施工なし':'施工あり',remove:row.rem==='1'?'あり':'なし',note:row.addName||''}));
-        saveData(); renderTable(); updateRecentList(); showToast(`✅ ${items.length} 件（積算ツール形式）を読み込みました`);
       } else {
         showToast('対応していない JSON フォーマットです','err',3000);
       }
-    } catch (ex) { showToast('JSON 読み込みエラー: ' + ex.message,'err',4000); }
+    } catch(ex) { showToast('JSON 読み込みエラー: '+ex.message,'err',4000); }
   };
-  reader.readAsText(file); input.value = '';
+  reader.readAsText(file); input.value='';
 }
 
 function sendToEstimateTool() {
   if (items.length === 0) { showToast('明細が空です','err'); return; }
-  const data   = buildEstimateJSON();
-  const pname  = document.getElementById('hdrProjectName').value || '図面拾い出し';
-  const now    = new Date();
-  const pad    = n => String(n).padStart(2,'0');
+  const data = buildEstimateJSON();
+  const pname = document.getElementById('hdrProjectName').value || '図面拾い出し';
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
   const savedAt = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   try {
     let projects = [];
@@ -1146,17 +1169,139 @@ function sendToEstimateTool() {
     if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) projects = p; }
     const idx = projects.findIndex(p => p.name === pname);
     const newProj = { id:'case_'+now.getTime(), name:pname, savedAt, data };
-    if (idx >= 0) { if (!confirm(`「${pname}」が既に存在します。上書きしますか？`)) return; projects[idx] = newProj; }
-    else projects.push(newProj);
+    if (idx >= 0) {
+      if (!confirm(`「${pname}」が既に存在します。上書きしますか？`)) return;
+      projects[idx] = newProj;
+    } else {
+      projects.push(newProj);
+    }
     localStorage.setItem('usglass_projects', JSON.stringify(projects));
-    showToast(`✅ 積算ツールに送りました（${data.rows.length}件）`,'ok',3000);
+    showToast(`✅ 積算ツールに送りました（${data.items.length}件）`,'ok',3000);
     setTimeout(() => window.open('https://usglassworks.github.io/us-glass-estimate-tool/','_blank'), 700);
-  } catch (err) { showToast('送信エラー: '+err.message,'err',4000); }
+  } catch(err) { showToast('送信エラー: '+err.message,'err',4000); }
 }
 
-/* ================================================================
-   Helpers
-   ================================================================ */
+/* ── Project management ── */
+function syncSaveNameFromHeader() {
+  const nameIn = document.getElementById('saveProjectNameInput');
+  if (!nameIn.value) nameIn.value = document.getElementById('hdrProjectName').value || '';
+}
+
+async function saveCurrentProject() {
+  const nameIn = document.getElementById('saveProjectNameInput');
+  const projName = (nameIn.value || document.getElementById('hdrProjectName').value || '').trim();
+  if (!projName) { showToast('案件名を入力してください','err'); return; }
+  if (items.length === 0 && !currentFile) { showToast('明細もファイルもありません','err'); return; }
+
+  let fileData = null, fileName = null, fileMimeType = null;
+  if (currentFile) {
+    try {
+      fileData = await currentFile.arrayBuffer();
+      fileName = currentFile.name;
+      fileMimeType = currentFile.type || 'application/octet-stream';
+    } catch(e) { console.warn('File read error:', e); }
+  }
+
+  const project = {
+    id: 'proj_' + Date.now(),
+    name: projName,
+    savedAt: new Date().toISOString(),
+    fileName: fileName || null,
+    fileType: currentFileType || null,
+    fileMimeType: fileMimeType || null,
+    fileData: fileData || null,
+    items: JSON.parse(JSON.stringify(items))
+  };
+
+  try {
+    await dbPut(project);
+    showToast(`✅ 「${projName}」を保存しました`,'ok',2500);
+    loadProjectList();
+  } catch(e) {
+    showToast('保存エラー: '+e.message,'err',4000);
+  }
+}
+
+async function loadProjectList() {
+  const listEl = document.getElementById('projectList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="proj-empty">読み込み中…</div>';
+  try {
+    const projects = await dbGetAll();
+    if (!projects.length) {
+      listEl.innerHTML = '<div class="proj-empty">保存済み案件はありません</div>';
+      return;
+    }
+    projects.sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
+    listEl.innerHTML = projects.map(proj => {
+      const d = new Date(proj.savedAt);
+      const pad = n => String(n).padStart(2,'0');
+      const dateStr = `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const cnt = (proj.items || []).length;
+      const filePart = proj.fileName ? `📄 ${esc(proj.fileName)}` : 'ファイルなし';
+      const safeId = esc(proj.id);
+      const safeName = esc(proj.name).replace(/'/g,'&#39;');
+      return `
+        <div class="proj-item">
+          <div class="proj-info">
+            <div class="proj-name">${esc(proj.name)}</div>
+            <div class="proj-meta">${dateStr} | ${filePart} | ${cnt}件</div>
+          </div>
+          <div class="proj-actions">
+            <button class="btn btn-p btn-sm" onclick="loadProject('${safeId}')">📂 読込</button>
+            <button class="btn btn-ghost btn-sm" onclick="confirmDeleteProject('${safeId}','${safeName}')">削除</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div class="notice n-warn">読み込みエラー: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadProject(id) {
+  try {
+    const proj = await dbGet(id);
+    if (!proj) { showToast('案件が見つかりません','err'); return; }
+
+    document.getElementById('hdrProjectName').value = proj.name;
+    document.getElementById('saveProjectNameInput').value = proj.name;
+
+    items = (proj.items || []).map(it => calcItem({ ...it, id: it.id || genId() }));
+    saveData(); renderTable(); updateRecentList(); updateAllSummaries();
+
+    if (proj.fileData && proj.fileName) {
+      const blob = new Blob([proj.fileData], { type: proj.fileMimeType || 'application/octet-stream' });
+      const file = new File([blob], proj.fileName, { type: proj.fileMimeType || '' });
+      handleFile(file);
+    }
+
+    showToast(`✅ 「${proj.name}」を読み込みました（${items.length}件）`,'ok',2500);
+
+    // Switch to form tab
+    if (window.innerWidth >= 600) {
+      const formBtn = document.querySelector('.wbtn');
+      if (formBtn) switchWork(formBtn, 'form');
+    } else {
+      const formMBtn = document.querySelectorAll('.mbtn')[1];
+      if (formMBtn) switchMobile(formMBtn, 'form');
+    }
+  } catch(e) {
+    showToast('読み込みエラー: '+e.message,'err',4000);
+  }
+}
+
+async function confirmDeleteProject(id, name) {
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  try {
+    await dbDelete(id);
+    showToast('削除しました','info');
+    loadProjectList();
+  } catch(e) {
+    showToast('削除エラー: '+e.message,'err',4000);
+  }
+}
+
+/* ── Helpers ── */
 function isoDate() { return new Date().toISOString().slice(0,10); }
 
 function blobDL(blob, filename) {
@@ -1166,28 +1311,18 @@ function blobDL(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
-/* ================================================================
-   Init
-   ================================================================ */
+/* ── Init ── */
 loadData();
 renderTable();
 updateRecentList();
 updateAllSummaries();
 
 /* iOS Safari: touchend → focus() for OCR textarea */
-(function () {
-  var ta = document.getElementById('ocrInput');
-  if (!ta) return;
-  ta.addEventListener('touchend', function () {
-    var el = this;
-    requestAnimationFrame(function () { el.focus(); });
-  }, { passive: true });
-  ta.addEventListener('touchstart', function () {
-    if (document.activeElement !== this) {
-      var el = this;
-      requestAnimationFrame(function () { el.focus(); });
-    }
-  }, { passive: true });
+(function(){
+  var ta = document.getElementById('ocrInput'); if (!ta) return;
+  ta.addEventListener('touchend', function(){
+    var el=this; requestAnimationFrame(function(){ el.focus(); });
+  }, { passive:true });
 })();
 </script>
 </body>
